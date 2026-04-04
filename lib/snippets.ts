@@ -72,7 +72,7 @@ function buildTitleLine(s: Snippet): string {
 
 function buildProdLine(s: Snippet): string {
   const p = `${s.prod}${s.prodConfirmed ? "" : "*"}`;
-  return `Prod. ${p} ${formatDateMMDDYY(s.date)}`;
+  return `Prod. ${p}`;
 }
 
 /**
