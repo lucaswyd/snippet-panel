@@ -74,10 +74,6 @@ export default function Home() {
 
         <header style={{ marginBottom: "2rem", maxWidth: 560 }}>
           <h1 style={{ fontSize: "2rem" }}>Snippet Panel</h1>
-          <p className="subtle" style={{ marginTop: "0.5rem", lineHeight: 1.6 }}>
-            Private pipeline for music previews — tag, post, and swap Discord
-            channels without leaving the flow.
-          </p>
         </header>
 
         <div
