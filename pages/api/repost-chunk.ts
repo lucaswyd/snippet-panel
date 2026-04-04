@@ -10,7 +10,11 @@ import { loadSortedSnippetsFromGitHub } from "@/lib/processor";
 import { readRepostJob, writeRepostJob } from "@/lib/repost-job-store";
 import type { RepostJobState } from "@/lib/queue";
 
-const CHUNK_SNIPPETS = 3;
+/**
+ * One snippet per chunk keeps each invocation under Vercel time limits.
+ * Each HTTP call must run only ONE step (loading | posting | deleting | permissions).
+ */
+const CHUNK_SNIPPETS = 1;
 
 type Body = { jobId?: string };
 
@@ -52,10 +56,11 @@ export default async function handler(
       job._postIndex = 0;
       job.snippetsPosted = 0;
       await writeRepostJob(job);
+      return jsonJob();
     }
 
-    job = (await readRepostJob())!;
     if (job.step === "posting") {
+      job = (await readRepostJob())!;
       const sorted = await loadSortedSnippetsFromGitHub();
       const start = job._postIndex ?? 0;
       const batch = sorted.slice(start, start + CHUNK_SNIPPETS);
@@ -70,20 +75,22 @@ export default async function handler(
         job.step = "deleting";
       }
       await writeRepostJob(job);
+      return jsonJob();
     }
 
-    job = (await readRepostJob())!;
     if (job.step === "deleting") {
+      job = (await readRepostJob())!;
       const n = await deleteNextMessageBatch(job.snippetChannelId);
       job.messagesDeleted = (job.messagesDeleted ?? 0) + n;
       if (n === 0) {
         job.step = "permissions";
       }
       await writeRepostJob(job);
+      return jsonJob();
     }
 
-    job = (await readRepostJob())!;
     if (job.step === "permissions") {
+      job = (await readRepostJob())!;
       const octokit = getOctokit();
       const state = await getChannelsState(octokit);
       await setRoleChannelOverwrite(state.blankChannelId, VIEW_ROLE_ID, true);
@@ -99,10 +106,15 @@ export default async function handler(
       job.step = "done";
       job.status = "done";
       await writeRepostJob(job);
+      return jsonJob();
     }
 
-    const finalJob = await readRepostJob();
-    return res.status(200).json(stripJob(finalJob!));
+    return jsonJob();
+
+    async function jsonJob() {
+      const finalJob = await readRepostJob();
+      return res.status(200).json(stripJob(finalJob!));
+    }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Chunk failed";
     const cur = await readRepostJob();

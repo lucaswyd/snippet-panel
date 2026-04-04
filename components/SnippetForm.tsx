@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import { usePostingEstimate } from "@/hooks/usePostingEstimate";
 
 function todayISODate(): string {
   const d = new Date();
@@ -46,6 +47,7 @@ export default function SnippetForm() {
   const [discordBanner, setDiscordBanner] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const { data: est } = usePostingEstimate(true);
 
   const uploadOne = useCallback((file: File) => {
     const id =
@@ -390,6 +392,24 @@ export default function SnippetForm() {
           </div>
         ))}
       </div>
+
+      {est && (
+        <p
+          className="subtle"
+          style={{
+            fontSize: "0.78rem",
+            lineHeight: 1.45,
+            marginBottom: "1rem",
+          }}
+        >
+          Submitting adds a queue job: <strong>FFmpeg tagging</strong>{" "}
+          ({est.taggingNote}) Then the app <strong>reposts the whole archive</strong>{" "}
+          to Discord, clears the snippet channel, swaps permissions
+          {isNew ? ", and posts the new snippet announcement" : ""} — typically{" "}
+          <span className="mono">{est.queueFullPipeline.summary}</span> for the
+          Discord + GitHub portion (varies with archive size and rate limits).
+        </p>
+      )}
 
       <button
         type="submit"
