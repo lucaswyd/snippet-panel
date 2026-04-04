@@ -14,7 +14,6 @@ function stateDir(): string {
 
 const STATE_DIR = stateDir();
 const QUEUE_FILE = path.join(STATE_DIR, "queue.json");
-const REPOST_FILE = path.join(STATE_DIR, "repost-job.json");
 
 function ensureStateDir(): void {
   if (!fs.existsSync(STATE_DIR)) {
@@ -83,28 +82,4 @@ export interface RepostJobState {
   blankChannelId: string;
   snippetChannelId: string;
   _postIndex?: number;
-}
-
-export function readRepostJob(): RepostJobState | null {
-  try {
-    ensureStateDir();
-    if (!fs.existsSync(REPOST_FILE)) return null;
-    const raw = fs.readFileSync(REPOST_FILE, "utf8");
-    return JSON.parse(raw) as RepostJobState;
-  } catch {
-    return null;
-  }
-}
-
-export function writeRepostJob(job: RepostJobState): void {
-  ensureStateDir();
-  fs.writeFileSync(REPOST_FILE, JSON.stringify(job, null, 2), "utf8");
-}
-
-export function clearRepostJob(): void {
-  try {
-    if (fs.existsSync(REPOST_FILE)) fs.unlinkSync(REPOST_FILE);
-  } catch {
-    /* ignore */
-  }
 }

@@ -1,7 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { readRepostJob } from "@/lib/queue";
-
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+import { readRepostJob } from "@/lib/repost-job-store";
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "Method not allowed" });
@@ -10,7 +12,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!jobId || typeof jobId !== "string") {
     return res.status(400).json({ error: "jobId required" });
   }
-  const job = readRepostJob();
+  const job = await readRepostJob();
   if (!job || job.jobId !== jobId) {
     return res.status(404).json({ error: "Job not found" });
   }

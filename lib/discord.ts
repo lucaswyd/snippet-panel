@@ -37,6 +37,60 @@ async function discordFetch(
   return res;
 }
 
+const DEFAULT_CHANNEL_A = "1490100886024880371";
+const DEFAULT_CHANNEL_B = "1488379652668915885";
+
+/** Webhook URL for a physical channel (A/B). WEBHOOK_SNIPPETS → A, WEBHOOK_BLANK → B. */
+export function webhookUrlForChannelId(channelId: string): string {
+  const a = process.env.CHANNEL_A_ID ?? DEFAULT_CHANNEL_A;
+  const b = process.env.CHANNEL_B_ID ?? DEFAULT_CHANNEL_B;
+  if (channelId === a) return process.env.WEBHOOK_SNIPPETS ?? "";
+  if (channelId === b) return process.env.WEBHOOK_BLANK ?? "";
+  return "";
+}
+
+async function postToWebhook(webhookUrl: string, content: string): Promise<void> {
+  const url = webhookUrl.includes("?")
+    ? `${webhookUrl}&wait=true`
+    : `${webhookUrl}?wait=true`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Webhook post failed: ${res.status} ${t}`);
+  }
+  await sleep(500);
+}
+
+/** Post snippet sequence + separator via webhook (swap channels — not bot). */
+export async function postSnippetToWebhookUrl(
+  webhookUrl: string,
+  messages: string[]
+): Promise<void> {
+  if (!webhookUrl) {
+    throw new Error(
+      "Missing webhook for this channel. Set WEBHOOK_SNIPPETS (channel A) and WEBHOOK_BLANK (channel B), plus CHANNEL_A_ID / CHANNEL_B_ID if non-default."
+    );
+  }
+  for (const m of messages) {
+    await postToWebhook(webhookUrl, m);
+  }
+  await postToWebhook(webhookUrl, separatorMessage());
+}
+
+export async function postSnippetSwapFlow(
+  blankChannelId: string,
+  s: Snippet
+): Promise<void> {
+  const wh = webhookUrlForChannelId(blankChannelId);
+  const msgs = buildSwapChannelMessages(s);
+  await postSnippetToWebhookUrl(wh, msgs);
+}
+
+/** Bot: only for operations webhooks cannot do (delete, permissions). */
 export async function postChannelMessage(
   channelId: string,
   content: string
@@ -51,25 +105,6 @@ export async function postChannelMessage(
     throw new Error(`Discord post failed: ${res.status} ${t}`);
   }
   await sleep(500);
-}
-
-/** Post snippet sequence + separator to a channel */
-export async function postSnippetToChannel(
-  channelId: string,
-  messages: string[]
-): Promise<void> {
-  for (const m of messages) {
-    await postChannelMessage(channelId, m);
-  }
-  await postChannelMessage(channelId, separatorMessage());
-}
-
-export async function postSnippetSwapFlow(
-  blankChannelId: string,
-  s: Snippet
-): Promise<void> {
-  const msgs = buildSwapChannelMessages(s);
-  await postSnippetToChannel(blankChannelId, msgs);
 }
 
 export async function postSnippetNewWebhook(s: Snippet): Promise<void> {

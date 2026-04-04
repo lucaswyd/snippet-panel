@@ -122,6 +122,43 @@ export async function createOrUpdateSnippetFile(
   });
 }
 
+const REPOST_JOB_PATH = "state/repost-job.json";
+
+export async function readRepostJobFromGitHub(
+  octokit: Octokit
+): Promise<import("@/lib/queue").RepostJobState | null> {
+  try {
+    const { content } = await getFileContent(octokit, REPOST_JOB_PATH);
+    const j = JSON.parse(content) as import("@/lib/queue").RepostJobState;
+    if (!j?.jobId) return null;
+    return j;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeRepostJobToGitHub(
+  octokit: Octokit,
+  job: import("@/lib/queue").RepostJobState
+): Promise<void> {
+  const body = JSON.stringify(job, null, 2);
+  let sha: string | undefined;
+  try {
+    const cur = await getFileContent(octokit, REPOST_JOB_PATH);
+    sha = cur.sha;
+  } catch {
+    sha = undefined;
+  }
+  await octokit.rest.repos.createOrUpdateFileContents({
+    owner: owner(),
+    repo: repo(),
+    path: REPOST_JOB_PATH,
+    message: `repost: ${job.step} (${job.jobId.slice(0, 8)})`,
+    content: Buffer.from(body, "utf8").toString("base64"),
+    ...(sha ? { sha } : {}),
+  });
+}
+
 export async function findSnippetPathByQueueId(
   octokit: Octokit,
   queueId: string

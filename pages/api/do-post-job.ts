@@ -4,6 +4,7 @@ import {
   postSnippetNewWebhook,
   postSnippetSwapFlow,
   setRoleChannelOverwrite,
+  sleep,
   VIEW_ROLE_ID,
 } from "@/lib/discord";
 import {
@@ -14,8 +15,9 @@ import {
 } from "@/lib/github";
 import { loadSortedSnippetsFromGitHub } from "@/lib/processor";
 import { readQueue, updateQueueItem } from "@/lib/queue";
+import { sortSnippets } from "@/lib/snippets";
 
-type Body = { queueId?: string };
+type Body = { queueId?: string; taggedMediaUrls?: string[] };
 
 export default async function handler(
   req: NextApiRequest,
@@ -49,11 +51,28 @@ export default async function handler(
   }
 
   try {
+    await sleep(2000);
+
     const octokit = getOctokit();
+    let sorted = await loadSortedSnippetsFromGitHub();
+
+    if (body.taggedMediaUrls?.length) {
+      const fresh = await getSnippetAtPath(octokit, item.snippetPath);
+      if (!fresh.tagged_media?.length) {
+        const withTags = { ...fresh, tagged_media: body.taggedMediaUrls };
+        sorted = sortSnippets([
+          ...sorted.filter(
+            (s) => !(s.title === fresh.title && s.date === fresh.date)
+          ),
+          withTags,
+        ]);
+      }
+    }
+
     const state = await getChannelsState(octokit);
-    const sorted = await loadSortedSnippetsFromGitHub();
 
     for (const s of sorted) {
+      if (!(s.tagged_media?.length > 0)) continue;
       await postSnippetSwapFlow(state.blankChannelId, s);
     }
 
@@ -71,7 +90,9 @@ export default async function handler(
 
     if (item.isNew) {
       const fresh = await getSnippetAtPath(octokit, item.snippetPath);
-      await postSnippetNewWebhook(fresh);
+      if (fresh.tagged_media?.length) {
+        await postSnippetNewWebhook(fresh);
+      }
     }
 
     updateQueueItem(queueId, { status: "done" });

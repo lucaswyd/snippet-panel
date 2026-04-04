@@ -7,11 +7,8 @@ import {
 } from "@/lib/discord";
 import { getOctokit, getChannelsState, putChannelsState } from "@/lib/github";
 import { loadSortedSnippetsFromGitHub } from "@/lib/processor";
-import {
-  readRepostJob,
-  writeRepostJob,
-  type RepostJobState,
-} from "@/lib/queue";
+import { readRepostJob, writeRepostJob } from "@/lib/repost-job-store";
+import type { RepostJobState } from "@/lib/queue";
 
 const CHUNK_SNIPPETS = 3;
 
@@ -38,7 +35,7 @@ export default async function handler(
     return res.status(400).json({ error: "jobId required" });
   }
 
-  let job = readRepostJob();
+  let job = await readRepostJob();
   if (!job || job.jobId !== jobId) {
     return res.status(404).json({ error: "Job not found" });
   }
@@ -54,15 +51,16 @@ export default async function handler(
       job.step = "posting";
       job._postIndex = 0;
       job.snippetsPosted = 0;
-      writeRepostJob(job);
+      await writeRepostJob(job);
     }
 
-    job = readRepostJob()!;
+    job = (await readRepostJob())!;
     if (job.step === "posting") {
       const sorted = await loadSortedSnippetsFromGitHub();
       const start = job._postIndex ?? 0;
       const batch = sorted.slice(start, start + CHUNK_SNIPPETS);
       for (const s of batch) {
+        if (!(s.tagged_media?.length > 0)) continue;
         await postSnippetSwapFlow(job.blankChannelId, s);
       }
       const next = start + batch.length;
@@ -71,20 +69,20 @@ export default async function handler(
       if (next >= sorted.length) {
         job.step = "deleting";
       }
-      writeRepostJob(job);
+      await writeRepostJob(job);
     }
 
-    job = readRepostJob()!;
+    job = (await readRepostJob())!;
     if (job.step === "deleting") {
       const n = await deleteNextMessageBatch(job.snippetChannelId);
       job.messagesDeleted = (job.messagesDeleted ?? 0) + n;
       if (n === 0) {
         job.step = "permissions";
       }
-      writeRepostJob(job);
+      await writeRepostJob(job);
     }
 
-    job = readRepostJob()!;
+    job = (await readRepostJob())!;
     if (job.step === "permissions") {
       const octokit = getOctokit();
       const state = await getChannelsState(octokit);
@@ -100,19 +98,19 @@ export default async function handler(
       );
       job.step = "done";
       job.status = "done";
-      writeRepostJob(job);
+      await writeRepostJob(job);
     }
 
-    const finalJob = readRepostJob();
+    const finalJob = await readRepostJob();
     return res.status(200).json(stripJob(finalJob!));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Chunk failed";
-    const cur = readRepostJob();
+    const cur = await readRepostJob();
     if (cur && cur.jobId === jobId) {
       cur.status = "error";
       cur.errorMessage = msg;
       cur.step = "done";
-      writeRepostJob(cur);
+      await writeRepostJob(cur);
       return res.status(500).json(stripJob(cur));
     }
     return res.status(500).json({ error: msg });

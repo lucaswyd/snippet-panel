@@ -53,6 +53,9 @@ export default async function handler(
       "Content-Type": "application/json",
       "x-internal-secret": internal,
     },
-    body: JSON.stringify({ queueId }),
+    body: JSON.stringify({
+      queueId,
+      taggedMediaUrls: body.taggedMediaUrls,
+    }),
   }).catch(() => {});
 }
