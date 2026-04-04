@@ -21,7 +21,11 @@ function repo(): string {
 export function getOctokit(): Octokit {
   const token = process.env.GITHUB_TOKEN;
   if (!token) throw new Error("GITHUB_TOKEN is not set");
-  return new Octokit({ auth: token });
+  return new Octokit({
+    auth: token,
+    /** Avoid hung serverless invocations if GitHub stalls (was hitting 300s Vercel limit). */
+    request: { timeout: 25_000 },
+  });
 }
 
 export async function getFileContent(

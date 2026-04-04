@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { usePostingEstimate } from "@/hooks/usePostingEstimate";
+import { parseJsonResponse } from "@/lib/parse-json-response";
 
 type JobApi = {
   jobId?: string;
@@ -34,16 +35,7 @@ export default function RepostModal({ open, onClose }: Props) {
     }
   }, [open]);
 
-  useEffect(() => {
-    if (!open || !jobId || phase !== "run") return;
-    const poll = setInterval(() => {
-      void fetch(`/api/repost-status?jobId=${encodeURIComponent(jobId)}`)
-        .then((r) => r.json())
-        .then((j: JobApi) => setJob(j))
-        .catch(() => {});
-    }, 2000);
-    return () => clearInterval(poll);
-  }, [open, phase, jobId]);
+  /** Do not poll /api/repost-status during repost: it hammers GitHub and can stall until Vercel’s max duration (504). State comes from each /api/repost-chunk response. */
 
   const startRepost = async () => {
     setError(null);
@@ -51,7 +43,9 @@ export default function RepostModal({ open, onClose }: Props) {
     setPhase("run");
     try {
       const start = await fetch("/api/repost-start", { method: "POST" });
-      const data = await start.json();
+      const data = await parseJsonResponse<{ jobId?: string; error?: string }>(
+        start
+      );
       if (!start.ok) throw new Error(data.error || "Failed to start");
       const id = data.jobId as string;
       setJobId(id);
@@ -71,9 +65,11 @@ export default function RepostModal({ open, onClose }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ jobId: id }),
         });
-        const chunk = (await chunkRes.json()) as JobApi;
+        const chunk = await parseJsonResponse<JobApi & { error?: string }>(
+          chunkRes
+        );
         if (!chunkRes.ok) {
-          throw new Error((chunk as { error?: string }).error || "Chunk failed");
+          throw new Error(chunk.error || "Chunk failed");
         }
         setJob(chunk);
         lastStatus = chunk.status;
