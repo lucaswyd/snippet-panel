@@ -70,7 +70,13 @@ export default async function handler(
     rawFileUrls: [...body.rawFileUrls],
   };
 
-  pushQueueItem(queueItem);
+  try {
+    pushQueueItem(queueItem);
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Could not save queue (filesystem)";
+    return res.status(500).json({ error: msg });
+  }
 
   try {
     const octokit = getOctokit();

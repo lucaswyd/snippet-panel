@@ -2,7 +2,17 @@ import fs from "fs";
 import path from "path";
 import type { QueueItem } from "@/lib/snippets";
 
-const STATE_DIR = path.join(process.cwd(), "state");
+/**
+ * Vercel serverless FS is read-only except /tmp. Local dev uses ./state.
+ */
+function stateDir(): string {
+  if (process.env.VERCEL) {
+    return path.join("/tmp", "snippet-panel-state");
+  }
+  return path.join(process.cwd(), "state");
+}
+
+const STATE_DIR = stateDir();
 const QUEUE_FILE = path.join(STATE_DIR, "queue.json");
 const REPOST_FILE = path.join(STATE_DIR, "repost-job.json");
 
