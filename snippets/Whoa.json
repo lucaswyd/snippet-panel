@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Whoa",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "Dstarkel",
+  "prodConfirmed": true,
+  "date": "2025-09-09",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/f6b30fad/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/8389a8d6/download"
+  ]
+}

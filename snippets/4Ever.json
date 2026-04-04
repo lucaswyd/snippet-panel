@@ -1,0 +1,30 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "4Ever",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "ev7n, 10kGrey, & YK",
+  "prodConfirmed": true,
+  "date": "2026-01-06",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489128743564869694/download-33.mov?ex=69cf4ab7&is=69cdf937&hm=6adec5ba687f4e9338f3c14cd25fefb86e345fc95b49dde717b077d3291ab808&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489128744609386618/SaveClip.App_AQM8HnnunIUfZKdtVSn_1nyTgBf4PWucLAiBzkr6mqm_ei8oZ5JXvUMiHxLFssJlp9k8wGaSV_Jipmobr2n3qeA_kSgdhIzcPpn5Q5Y.mp4?ex=69cf4ab7&is=69cdf937&hm=a99acaad2b1c52f2f2a91835a714a64d200ec78b4243ecea778fc48e3b050260&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489128745901097011/copy_DD3E8C96-D0FA-461F-A502-04AF816F0404.mov?ex=69cf4ab7&is=69cdf937&hm=16769b3b4a3ba32e98729f6844c7edc4b26f232384c783d5c0e7e2b26c7a97d1&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489128748149113022/copy_917F65C9-9AF4-45B4-B39D-FEC6DF98FE00.mov?ex=69cf4ab8&is=69cdf938&hm=5a31bb126e9a25230689fd09d9a1fe2832b367f2954e4253f48fbc95a4080a81&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489128752268054709/copy_61E25D3A-9627-47A7-B5CA-54A0D419A6D2.mov?ex=69cf4ab9&is=69cdf939&hm=7c5e5a19893ea30bc4cf64a5d0ace1211007313ac41d916bf0062ced8313d2e1&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489128755208126544/copy_6B63E0A1-A106-49B5-B737-01FC2816A428.mov?ex=69cf4ab9&is=69cdf939&hm=bf02247cbc2ace31756259531f8bd137354568e225207594cad0ce4614743e53&"
+  ],
+  "tagged_media": [
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1490089885195964537/4Ever_Snippet_1.mov?ex=69d2c9d9&is=69d17859&hm=caae9bf7a323080cbbda7eaf71b250f52d8459dfac29bd16a72310124f5f2e89&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489830655389864017/4Ever_Snippet_1.mov?ex=69d1d86b&is=69d086eb&hm=dffa7774408d69a882dbb641000043f889c46da86bd1e54b64a755fe968850dc&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489831391620366336/4Ever_Snippet_2.mp4?ex=69d1d91b&is=69d0879b&hm=e8aa90ea27b0b48a57d4cca8a19adecd3bd921670584e266b6c39a6782369925&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489831467247730810/4Ever_Snippet_3.mov?ex=69d1d92d&is=69d087ad&hm=5a0142aead9266bf057f6f3e70500e319624cb4ab35a041061fa84cf3dc7bc7f&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489831574370254918/4Ever_Snippet_4.mov?ex=69d1d947&is=69d087c7&hm=49689cfb9b3f06fe62ee1dd5c6bdcdf318db6eade0906d0829cc04122e7dd809&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489831773146841231/4Ever_Snippet_5.mov?ex=69d1d976&is=69d087f6&hm=55c5ec19580d41431d11fe676ce2cc90dc160d49fbb07d5f3469308b221c0687&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489831952985886730/4Ever_Snippet_6.mov?ex=69d1d9a1&is=69d08821&hm=d4237d22d13be31633068b2e75ef6a3761c0ae9c5f5b48da0f4eb54dd203b4b4&"
+  ]
+}

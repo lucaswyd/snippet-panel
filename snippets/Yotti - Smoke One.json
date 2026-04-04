@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Yotti - Smoke One",
+  "titleConfirmed": false,
+  "feat": "Pradabagshawty",
+  "prod": "ev7n",
+  "prodConfirmed": true,
+  "date": "2026-02-09",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489349268840906752/copy_DA44C29E-5F6C-4DC0-8843-D422C4E6B935.mov?ex=69d01818&is=69cec698&hm=8595babcf77c4e87609f19442c9d9749d095405bb00a2e8e2b69d050a6273ded&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489349275010990160/copy_B8301774-2B97-4255-9A5E-20D9E1656DDE.mov?ex=69d01819&is=69cec699&hm=dae148454e4362a140ba6a7d078013e58dc3e4ea4c6e3b2da237033cb8bb7927&"
+  ],
+  "tagged_media": [
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489848960183963762/Yotti_-_Smoke_One_Snippet_1.mov?ex=69d1e978&is=69d097f8&hm=4fe66133562282d160840017cf5fd32543a5b5c071f37154bceced53cad70bd3&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489849072046047322/Yotti_-_Smoke_One_Snippet_2.mov?ex=69d1e992&is=69d09812&hm=3cac51ee667f1a6331789e6abd453c6b066504ced007881ab37925ddbb956894&"
+  ]
+}

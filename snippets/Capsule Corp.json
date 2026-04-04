@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Capsule Corp",
+  "titleConfirmed": true,
+  "feat": "Protect",
+  "prod": "Traiqo & Yungzayy",
+  "prodConfirmed": true,
+  "date": "2025-08-28",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://fast-file.com/ac67bca4/download",
+    "https://fast-file.com/612d233b/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/c59f12bf/download",
+    "https://fast-file.com/20965b0e/download"
+  ]
+}

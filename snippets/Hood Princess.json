@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Hood Princess",
+  "titleConfirmed": true,
+  "feat": "Rich Amiri",
+  "prod": "Hariroc",
+  "prodConfirmed": true,
+  "date": "2026-02-11",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489354083058843678/428AD357-A351-44D0-9611-849A0B46895D.mov?ex=69d01c94&is=69cecb14&hm=1a936e807b2723b1c1c0960cce30027adcdaa3d148bf350ef29da1473169ed86&"
+  ],
+  "tagged_media": [
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489839607280570388/Hood_Princess_Snippet_1.mov?ex=69d1e0c2&is=69d08f42&hm=b6ddc026d4228c28d05c4a8bb0126b9ff45106f460bef618c9ec6c67c7418ad7&"
+  ]
+}

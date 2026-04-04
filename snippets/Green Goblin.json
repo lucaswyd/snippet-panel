@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Green Goblin",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "Dstarkel",
+  "prodConfirmed": true,
+  "date": "2025-06-28",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/dce2bba8/download",
+    "https://fast-file.com/a151b2b5/download",
+    "https://fast-file.com/834edfa6/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/69156df0/download",
+    "https://fast-file.com/aacc854d/download",
+    "https://fast-file.com/821d8095/download"
+  ]
+}

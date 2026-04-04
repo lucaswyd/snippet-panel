@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Baguette",
+  "titleConfirmed": false,
+  "feat": "Ealuhri & Imsomarcus",
+  "prod": "WhyCeg",
+  "prodConfirmed": true,
+  "date": "2025-08-18",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://fast-file.com/89313a66/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/738e2604/download"
+  ]
+}

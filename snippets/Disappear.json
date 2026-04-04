@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Disappear",
+  "titleConfirmed": false,
+  "feat": "",
+  "prod": "TRGC",
+  "prodConfirmed": true,
+  "date": "2026-04-01",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489107884968247408/copy_2BB11869-727B-482F-AB67-3FA25B640A70.mov?ex=69cf374a&is=69cde5ca&hm=5ccda73d31cd231ad1014ba7d25a8c2cf51b16c14f8e94cb9d161b90149345f4&"
+  ],
+  "tagged_media": [
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489835622985371839/Disappear_Snippet_1.mov?ex=69d1dd0c&is=69d08b8c&hm=62f75267da2adee5a8989193cf052cccd95684bff65b13bf4acbfbe30289ba09&"
+  ]
+}

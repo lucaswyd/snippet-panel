@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Catnip",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "SouljaSpirits",
+  "prodConfirmed": true,
+  "date": "2025-11-22",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/5546cf34/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/de9b5c2a/download"
+  ]
+}

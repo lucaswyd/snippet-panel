@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "???",
+  "titleConfirmed": false,
+  "feat": "",
+  "prod": "???",
+  "prodConfirmed": false,
+  "date": "2025-08-07",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://fast-file.com/23c8fd25/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/35424a42/download"
+  ]
+}

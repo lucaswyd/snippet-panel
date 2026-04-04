@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Tin Foil",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "ev7n",
+  "prodConfirmed": true,
+  "date": "2026-02-22",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/fc01fec0/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/04a84cef/download"
+  ]
+}

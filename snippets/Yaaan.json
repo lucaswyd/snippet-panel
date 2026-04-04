@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Yaaan",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "WhyCeg",
+  "prodConfirmed": true,
+  "date": "2025-11-22",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.ru/914e09a7/download",
+    "https://fast-file.ru/dff2c836/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/e522fa80/download",
+    "https://fast-file.com/06b9516d/download"
+  ]
+}

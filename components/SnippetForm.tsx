@@ -236,7 +236,7 @@ export default function SnippetForm() {
     <form className="panel" style={{ padding: "1.75rem" }} onSubmit={onSubmit}>
       <h1>New snippet</h1>
       <p className="subtle" style={{ marginBottom: "1.5rem" }}>
-        Upload previews, confirm metadata, and queue for tagging.
+        
       </p>
 
       {discordBanner && (

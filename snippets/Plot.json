@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Plot",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "WhyCeg & Luh BG",
+  "prodConfirmed": true,
+  "date": "2025-07-20",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://fast-file.com/e4bda055/download",
+    "https://fast-file.com/45b0d6fb/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/334fe5bf/download",
+    "https://fast-file.com/1e3f13e7/download"
+  ]
+}

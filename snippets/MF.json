@@ -1,0 +1,23 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "MF",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "WhyCeg & Dezeiioun",
+  "prodConfirmed": true,
+  "date": "2026-01-09",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489354870388687049/B45PT0UR_EP_2_Prada_Recording_MF_For_B45Problems_-_ske_1080p_h264_youtube.mp4?ex=69d01d4f&is=69cecbcf&hm=7b081c6b88648563b99c96630c41459b4ad16d1f6bf7d9ee7cc7c7faa860eece&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489354874624938024/download-4.mov?ex=69d01d50&is=69cecbd0&hm=6e1aba105b3baa9a77ea6c24eca677a098e0216ec41c1abb8502a6a1ee8c529f&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489354876537405440/download-17.mp4?ex=69d01d51&is=69cecbd1&hm=ce959055bab09dd03149b7e23409df55a882150b9cae266dd868521b185a4229&"
+  ],
+  "tagged_media": [
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489845742125449356/MF_Snippet_1.mp4?ex=69d1e678&is=69d094f8&hm=de806b3205318b27b89d99cf5036e510437685e8b7dff8e298caa72a1c4f516e&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489845871951478876/MF_Snippet_2.mov?ex=69d1e697&is=69d09517&hm=686de2ff0af7bc2de43cc75f2fcfa7d6c740d04a95b16fee907a75f3fa1a621d&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489846010686738482/MF_Snippet_3.mp4?ex=69d1e6b8&is=69d09538&hm=7a3d7c9b3307f618bf2be3d6e939747f0e64861e483fb400c591d254854d9982&"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "My Soul",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "Dezeiioun",
+  "prodConfirmed": true,
+  "date": "2025-07-20",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/9de8f6db/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/91dad25e/download"
+  ]
+}

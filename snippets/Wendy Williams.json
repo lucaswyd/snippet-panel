@@ -1,0 +1,19 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Wendy Williams",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "SouljaSpirits",
+  "prodConfirmed": true,
+  "date": "2025-05-01",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/b7521f7c/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/f0e618c2/download"
+  ]
+}

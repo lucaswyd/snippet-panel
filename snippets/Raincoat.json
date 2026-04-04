@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Raincoat",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "TRGC",
+  "prodConfirmed": true,
+  "date": "2025-07-18",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/908e6c8f/download",
+    "https://fast-file.com/0e2eb014/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/8176fb40/download",
+    "https://fast-file.com/0619e9a1/download"
+  ]
+}

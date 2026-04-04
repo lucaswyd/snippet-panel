@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Black N White",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "fuckshiro",
+  "prodConfirmed": true,
+  "date": "2025-01-07",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/cc0ecaec/download",
+    "https://fast-file.com/f3f5643f/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/8f7a0c51/download",
+    "https://fast-file.com/9b287550/download"
+  ]
+}

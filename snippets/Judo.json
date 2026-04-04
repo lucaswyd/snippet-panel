@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Judo",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "Dstarkel",
+  "prodConfirmed": true,
+  "date": "2025-10-24",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/2ba8db11/download",
+    "https://fast-file.com/cc5550a6/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/880b7880/download",
+    "https://fast-file.com/e875233c/download"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Flagrant Foul",
+  "titleConfirmed": true,
+  "feat": "Baby Auto",
+  "prod": "Gelato",
+  "prodConfirmed": true,
+  "date": "2025-11-20",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": true,
+  "untagged_media": [
+    "https://fast-file.com/2100aeb0/download",
+    "https://fast-file.com/1d9e06cc/download"
+  ],
+  "tagged_media": [
+    "https://fast-file.com/6cc3acca/download",
+    "https://fast-file.com/70f85062/download"
+  ]
+}

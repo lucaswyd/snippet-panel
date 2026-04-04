@@ -1,0 +1,21 @@
+{
+  "createdAt": "2026-04-03T05:00:00.000Z",
+  "title": "Closer",
+  "titleConfirmed": true,
+  "feat": "",
+  "prod": "???",
+  "prodConfirmed": false,
+  "date": "2025-13-12",
+  "ping": false,
+  "webhookSelected": "snippet-archive",
+  "messageId": "",
+  "released": false,
+  "untagged_media": [
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489347245026574536/copy_40B3C921-616F-451B-BDE6-6FAA76F19193.mov?ex=69d01635&is=69cec4b5&hm=fdb7ddfa3c6649aad1653a1d7ca661810b7618827c9e40abb132ec8e87b67073&",
+    "https://cdn.discordapp.com/attachments/1430440623147581501/1489347252336984154/SaveClip.App_AQOWvk_IqB0edDe47Mzg-8-uuQ9Y-cfIX9Sx9cM94Xbb7CcAHNtafFgp7ti_WSXcvZs11Iffttab5IZTGAHgBWuh36jZ6egWl-RSDcY.mp4?ex=69d01637&is=69cec4b7&hm=fb85010ef7aadd7028701893ccef94e99637ee41ef5b54a32a73c3c2c5c922f6&"
+  ],
+  "tagged_media": [
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489835268549771294/Closer_Snippet_1.mov?ex=69d1dcb7&is=69d08b37&hm=472c3f9a65c525ace0a2fb475f1259d51a7a8947a033bcf9f0a1ed83fd910e63&",
+    "https://cdn.discordapp.com/attachments/1488379652668915885/1489835397063249940/Closer_Snippet_2.mp4?ex=69d1dcd6&is=69d08b56&hm=374b978560b4bf9b0b69cb7f67f799b7b8c5d2673c8b59802095fb5c2d8ad579&"
+  ]
+}
