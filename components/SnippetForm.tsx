@@ -17,6 +17,22 @@ type UploadRow = {
   error?: string;
 };
 
+/** Browser → fast-file directly (avoids Vercel ~4.5MB body limit on /api/upload). */
+const FAST_FILE_UPLOAD = "https://fast-file.com/upload";
+/** Only used if direct upload fails; must stay under Vercel serverless request limit. */
+const PROXY_MAX_BYTES = 4 * 1024 * 1024;
+
+function downloadUrlFromFastFileJson(text: string): string | undefined {
+  try {
+    const data = JSON.parse(text) as { files?: { title?: string }[] };
+    const title = data.files?.[0]?.title;
+    if (title) return `https://fast-file.com/${title}/download`;
+  } catch {
+    /* ignore */
+  }
+  return undefined;
+}
+
 export default function SnippetForm() {
   const [title, setTitle] = useState("");
   const [titleConfirmed, setTitleConfirmed] = useState(true);
@@ -41,62 +57,110 @@ export default function SnippetForm() {
       { id, name: file.name, size: file.size, progress: 0 },
     ]);
 
+    const patchRow = (patch: Partial<UploadRow>) => {
+      setUploads((u) =>
+        u.map((row) => (row.id === id ? { ...row, ...patch } : row))
+      );
+    };
+
+    const uploadViaVercelProxy = () => {
+      if (file.size > PROXY_MAX_BYTES) {
+        patchRow({
+          error:
+            "Could not reach fast-file from the browser and file is too large for the server relay (~4MB). Try another network or upload via Discord.",
+          progress: 0,
+        });
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", file);
+      const px = new XMLHttpRequest();
+      px.upload.addEventListener("progress", (ev) => {
+        if (!ev.lengthComputable) return;
+        const pct = Math.round((ev.loaded / ev.total) * 100);
+        patchRow({ progress: pct });
+      });
+      px.addEventListener("load", () => {
+        let data: { error?: string; files?: { downloadUrl?: string }[] } = {};
+        try {
+          data = JSON.parse(px.responseText) as typeof data;
+        } catch {
+          /* ignore */
+        }
+        if (px.status === 413) {
+          if (data.error === "DISCORD_UPLOAD_NEEDED") {
+            setDiscordBanner(true);
+            patchRow({
+              error: "Too large for fast-file",
+              progress: 0,
+            });
+          } else {
+            patchRow({
+              error:
+                "File too large for server upload. Direct browser upload should be used — try refreshing.",
+              progress: 0,
+            });
+          }
+          return;
+        }
+        if (px.status < 200 || px.status >= 300) {
+          patchRow({
+            error: data.error || "Upload failed",
+            progress: 0,
+          });
+          return;
+        }
+        const downloadUrl = data.files?.[0]?.downloadUrl;
+        patchRow({
+          progress: 100,
+          downloadUrl,
+          error: downloadUrl ? undefined : "Invalid response",
+        });
+      });
+      px.addEventListener("error", () => {
+        patchRow({ error: "Network error", progress: 0 });
+      });
+      px.open("POST", "/api/upload");
+      px.send(fd);
+    };
+
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("files", file, file.name);
 
     const xhr = new XMLHttpRequest();
     xhr.upload.addEventListener("progress", (ev) => {
       if (!ev.lengthComputable) return;
       const pct = Math.round((ev.loaded / ev.total) * 100);
-      setUploads((u) =>
-        u.map((row) => (row.id === id ? { ...row, progress: pct } : row))
-      );
+      patchRow({ progress: pct });
     });
     xhr.addEventListener("load", () => {
-      let data: { error?: string; files?: { downloadUrl?: string }[] } = {};
-      try {
-        data = JSON.parse(xhr.responseText) as typeof data;
-      } catch {
-        /* ignore */
+      if (xhr.status === 0) {
+        uploadViaVercelProxy();
+        return;
       }
-      if (xhr.status === 413 && data.error === "DISCORD_UPLOAD_NEEDED") {
+      if (xhr.status === 413) {
         setDiscordBanner(true);
-        setUploads((u) =>
-          u.map((row) =>
-            row.id === id
-              ? { ...row, error: "Too large for fast-file", progress: 0 }
-              : row
-          )
-        );
+        patchRow({
+          error: "Too large for fast-file",
+          progress: 0,
+        });
         return;
       }
-      if (xhr.status < 200 || xhr.status >= 300) {
-        setUploads((u) =>
-          u.map((row) =>
-            row.id === id
-              ? { ...row, error: data.error || "Upload failed" }
-              : row
-          )
-        );
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const downloadUrl = downloadUrlFromFastFileJson(xhr.responseText);
+        if (downloadUrl) {
+          patchRow({ progress: 100, downloadUrl });
+          return;
+        }
+        uploadViaVercelProxy();
         return;
       }
-      const downloadUrl = data.files?.[0]?.downloadUrl;
-      setUploads((u) =>
-        u.map((row) =>
-          row.id === id
-            ? { ...row, progress: 100, downloadUrl }
-            : row
-        )
-      );
+      uploadViaVercelProxy();
     });
     xhr.addEventListener("error", () => {
-      setUploads((u) =>
-        u.map((row) =>
-          row.id === id ? { ...row, error: "Network error" } : row
-        )
-      );
+      uploadViaVercelProxy();
     });
-    xhr.open("POST", "/api/upload");
+    xhr.open("POST", FAST_FILE_UPLOAD);
     xhr.send(fd);
   }, []);
 
