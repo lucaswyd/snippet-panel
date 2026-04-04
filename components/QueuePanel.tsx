@@ -66,7 +66,7 @@ export default function QueuePanel() {
     <div className="panel" style={{ padding: "1.5rem", height: "fit-content" }}>
       <h2
         style={{
-          fontFamily: "var(--font-display), serif",
+          fontFamily: "var(--font-display)",
           fontSize: "1.15rem",
           margin: "0 0 1rem",
         }}
