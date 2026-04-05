@@ -33,8 +33,14 @@ export function getOctokit(): Octokit {
   if (!token) throw new Error("GITHUB_TOKEN is not set");
   return new Octokit({
     auth: token,
-    /** Avoid hung serverless invocations if GitHub stalls (was hitting 300s Vercel limit). */
-    request: { timeout: 25_000 },
+    /**
+     * Default octokit.js enables @octokit/plugin-throttling: on rate/secondary limits it
+     * sleeps for GitHub's Retry-After (sometimes thousands of seconds). On Vercel that
+     * looks like a hung request until FUNCTION_INVOCATION_TIMEOUT — not a "wait until
+     * tomorrow" thing on our side, but the client was stuck in sleep().
+     */
+    throttle: { enabled: false },
+    request: { timeout: 20_000, retries: 0 },
   });
 }
 
