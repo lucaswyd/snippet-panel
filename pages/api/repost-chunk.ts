@@ -3,6 +3,7 @@ import {
   deleteNextMessageBatch,
   postSnippetSwapFlow,
   setRoleChannelOverwrite,
+  sleep,
   VIEW_ROLE_ID,
 } from "@/lib/discord";
 import { getOctokit, getChannelsState, putChannelsState } from "@/lib/github";
@@ -39,7 +40,15 @@ export default async function handler(
     return res.status(400).json({ error: "jobId required" });
   }
 
-  let job = await readRepostJob();
+  /** GitHub read-after-write can lag; repost-start may have just committed. */
+  let job: Awaited<ReturnType<typeof readRepostJob>> = null;
+  const deadline = Date.now() + 8000;
+  for (;;) {
+    job = await readRepostJob();
+    if (job && job.jobId === jobId) break;
+    if (Date.now() >= deadline) break;
+    await sleep(200);
+  }
   if (!job || job.jobId !== jobId) {
     return res.status(404).json({ error: "Job not found" });
   }

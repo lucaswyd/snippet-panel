@@ -1,8 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v4 as uuidv4 } from "uuid";
-import { getChannelsState, getOctokit } from "@/lib/github";
-import { writeRepostJob } from "@/lib/repost-job-store";
-import type { RepostJobState } from "@/lib/queue";
+import { createInitialRepostJob } from "@/lib/repost-job-store";
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,23 +12,8 @@ export default async function handler(
   }
 
   try {
-    const octokit = getOctokit();
-    const state = await getChannelsState(octokit);
     const jobId = uuidv4();
-    const job: RepostJobState = {
-      jobId,
-      status: "running",
-      step: "loading",
-      snippetsTotal: 0,
-      snippetsPosted: 0,
-      messagesTotal: 0,
-      messagesDeleted: 0,
-      errorMessage: null,
-      blankChannelId: state.blankChannelId,
-      snippetChannelId: state.snippetChannelId,
-      _postIndex: 0,
-    };
-    await writeRepostJob(job);
+    await createInitialRepostJob(jobId);
     return res.status(200).json({ jobId });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to start job";

@@ -1,5 +1,15 @@
 import { Octokit } from "octokit";
+import type { RepostJobState } from "@/lib/queue";
 import type { Snippet } from "@/lib/snippets";
+
+function isNotFound(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "status" in e &&
+    (e as { status: number }).status === 404
+  );
+}
 
 export interface ChannelsState {
   snippetChannelId: string;
@@ -42,6 +52,19 @@ export async function getFileContent(
   }
   const content = Buffer.from(data.content, "base64").toString("utf8");
   return { content, sha: data.sha };
+}
+
+/** Missing file → null; other errors propagate. */
+export async function getFileContentOptional(
+  octokit: Octokit,
+  path: string
+): Promise<{ content: string; sha: string } | null> {
+  try {
+    return await getFileContent(octokit, path);
+  } catch (e) {
+    if (isNotFound(e)) return null;
+    throw e;
+  }
 }
 
 export async function getChannelsState(octokit: Octokit): Promise<ChannelsState> {
@@ -128,12 +151,49 @@ export async function createOrUpdateSnippetFile(
 
 const REPOST_JOB_PATH = "state/repost-job.json";
 
+/**
+ * First repost step: fetch channels + existing repost-job blob in parallel, then one commit.
+ * Avoids three sequential GitHub round-trips (was easy to hit Vercel timeouts when API is slow).
+ */
+export async function createInitialRepostJobOnGitHub(
+  octokit: Octokit,
+  jobId: string
+): Promise<void> {
+  const [channelsFile, repostFile] = await Promise.all([
+    getFileContent(octokit, "state/channels.json"),
+    getFileContentOptional(octokit, REPOST_JOB_PATH),
+  ]);
+  const state = JSON.parse(channelsFile.content) as ChannelsState;
+  const job: RepostJobState = {
+    jobId,
+    status: "running",
+    step: "loading",
+    snippetsTotal: 0,
+    snippetsPosted: 0,
+    messagesTotal: 0,
+    messagesDeleted: 0,
+    errorMessage: null,
+    blankChannelId: state.blankChannelId,
+    snippetChannelId: state.snippetChannelId,
+    _postIndex: 0,
+  };
+  const body = JSON.stringify(job, null, 2);
+  await octokit.rest.repos.createOrUpdateFileContents({
+    owner: owner(),
+    repo: repo(),
+    path: REPOST_JOB_PATH,
+    message: `repost: ${job.step} (${job.jobId.slice(0, 8)})`,
+    content: Buffer.from(body, "utf8").toString("base64"),
+    ...(repostFile ? { sha: repostFile.sha } : {}),
+  });
+}
+
 export async function readRepostJobFromGitHub(
   octokit: Octokit
-): Promise<import("@/lib/queue").RepostJobState | null> {
+): Promise<RepostJobState | null> {
   try {
     const { content } = await getFileContent(octokit, REPOST_JOB_PATH);
-    const j = JSON.parse(content) as import("@/lib/queue").RepostJobState;
+    const j = JSON.parse(content) as RepostJobState;
     if (!j?.jobId) return null;
     return j;
   } catch {
@@ -143,23 +203,17 @@ export async function readRepostJobFromGitHub(
 
 export async function writeRepostJobToGitHub(
   octokit: Octokit,
-  job: import("@/lib/queue").RepostJobState
+  job: RepostJobState
 ): Promise<void> {
   const body = JSON.stringify(job, null, 2);
-  let sha: string | undefined;
-  try {
-    const cur = await getFileContent(octokit, REPOST_JOB_PATH);
-    sha = cur.sha;
-  } catch {
-    sha = undefined;
-  }
+  const existing = await getFileContentOptional(octokit, REPOST_JOB_PATH);
   await octokit.rest.repos.createOrUpdateFileContents({
     owner: owner(),
     repo: repo(),
     path: REPOST_JOB_PATH,
     message: `repost: ${job.step} (${job.jobId.slice(0, 8)})`,
     content: Buffer.from(body, "utf8").toString("base64"),
-    ...(sha ? { sha } : {}),
+    ...(existing ? { sha: existing.sha } : {}),
   });
 }
 
