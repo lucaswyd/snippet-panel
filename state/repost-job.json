@@ -1,13 +1,14 @@
 {
-  "jobId": "b0d0ea88-987a-4e9d-bce5-ac4e2d0409cb",
+  "jobId": "e537e5b0-ad92-45e3-8fad-aec3f371bf42",
   "status": "running",
-  "step": "posting",
-  "snippetsTotal": 141,
-  "snippetsPosted": 8,
+  "step": "loading",
+  "snippetsTotal": 0,
+  "snippetsPosted": 0,
   "messagesTotal": 0,
   "messagesDeleted": 0,
   "errorMessage": null,
   "blankChannelId": "1488379652668915885",
   "snippetChannelId": "1490100886024880371",
-  "_postIndex": 8
+  "channelsStateSha": "8fd88a2bd01f06391260a13d507943c4e58bed62",
+  "_postIndex": 0
 }
