@@ -1,9 +1,10 @@
 import {
   createInitialRepostJobOnGitHub,
-  getChannelsState,
+  getFileContent,
   getOctokit,
   readRepostJobFromGitHub,
   writeRepostJobToGitHub,
+  type ChannelsState,
 } from "@/lib/github";
 import type { RepostJobState } from "@/lib/queue";
 
@@ -20,7 +21,8 @@ export async function createInitialRepostJob(jobId: string): Promise<void> {
     return;
   }
   const octokit = getOctokit();
-  const state = await getChannelsState(octokit);
+  const { content, sha } = await getFileContent(octokit, "state/channels.json");
+  const state = JSON.parse(content) as ChannelsState;
   const job: RepostJobState = {
     jobId,
     status: "running",
@@ -32,6 +34,7 @@ export async function createInitialRepostJob(jobId: string): Promise<void> {
     errorMessage: null,
     blankChannelId: state.blankChannelId,
     snippetChannelId: state.snippetChannelId,
+    channelsStateSha: sha,
     _postIndex: 0,
   };
   const { writeRepostJobSync } = await import("@/lib/repost-job-fs");

@@ -6,14 +6,17 @@ import {
   sleep,
   VIEW_ROLE_ID,
 } from "@/lib/discord";
-import { getOctokit, getChannelsState, putChannelsState } from "@/lib/github";
+import { getOctokit, putChannelsState } from "@/lib/github";
 import { loadSortedSnippetsFromGitHub } from "@/lib/processor";
+import { stripRepostJobForApi } from "@/lib/repost-job-api";
 import { readRepostJob, writeRepostJob } from "@/lib/repost-job-store";
 import type { RepostJobState } from "@/lib/queue";
 
 /**
  * One snippet per chunk keeps each invocation under Vercel time limits.
  * Each HTTP call must run only ONE step (loading | posting | deleting | permissions).
+ * Snippets are loaded once in the loading step and kept in job.cachedSnippets — no
+ * GitHub snippet listing during posting.
  */
 const CHUNK_SNIPPETS = 1;
 
@@ -41,7 +44,7 @@ export default async function handler(
   }
 
   /** GitHub read-after-write can lag; repost-start may have just committed. */
-  let job: Awaited<ReturnType<typeof readRepostJob>> = null;
+  let job: RepostJobState | null = null;
   const deadline = Date.now() + 8000;
   for (;;) {
     job = await readRepostJob();
@@ -54,23 +57,33 @@ export default async function handler(
   }
 
   if (job.status !== "running") {
-    return res.status(200).json(stripJob(job));
+    return res.status(200).json(stripRepostJobForApi(job));
   }
 
   try {
     if (job.step === "loading") {
       const sorted = await loadSortedSnippetsFromGitHub();
+      job.cachedSnippets = sorted;
       job.snippetsTotal = sorted.length;
       job.step = "posting";
       job._postIndex = 0;
       job.snippetsPosted = 0;
       await writeRepostJob(job);
-      return jsonJob();
+      return res.status(200).json(stripRepostJobForApi(job));
     }
 
     if (job.step === "posting") {
-      job = (await readRepostJob())!;
-      const sorted = await loadSortedSnippetsFromGitHub();
+      if (!Array.isArray(job.cachedSnippets)) {
+        job.step = "loading";
+        job.cachedSnippets = undefined;
+        job._postIndex = 0;
+        job.snippetsPosted = 0;
+        job.snippetsTotal = 0;
+        await writeRepostJob(job);
+        return res.status(200).json(stripRepostJobForApi(job));
+      }
+
+      const sorted = job.cachedSnippets;
       const start = job._postIndex ?? 0;
       const batch = sorted.slice(start, start + CHUNK_SNIPPETS);
       for (const s of batch) {
@@ -84,46 +97,41 @@ export default async function handler(
         job.step = "deleting";
       }
       await writeRepostJob(job);
-      return jsonJob();
+      return res.status(200).json(stripRepostJobForApi(job));
     }
 
     if (job.step === "deleting") {
-      job = (await readRepostJob())!;
       const n = await deleteNextMessageBatch(job.snippetChannelId);
       job.messagesDeleted = (job.messagesDeleted ?? 0) + n;
       if (n === 0) {
         job.step = "permissions";
       }
       await writeRepostJob(job);
-      return jsonJob();
+      return res.status(200).json(stripRepostJobForApi(job));
     }
 
     if (job.step === "permissions") {
-      job = (await readRepostJob())!;
       const octokit = getOctokit();
-      const state = await getChannelsState(octokit);
-      await setRoleChannelOverwrite(state.blankChannelId, VIEW_ROLE_ID, true);
-      await setRoleChannelOverwrite(state.snippetChannelId, VIEW_ROLE_ID, false);
+      const blank = job.blankChannelId;
+      const snippet = job.snippetChannelId;
+      await setRoleChannelOverwrite(blank, VIEW_ROLE_ID, true);
+      await setRoleChannelOverwrite(snippet, VIEW_ROLE_ID, false);
       await putChannelsState(
         octokit,
         {
-          snippetChannelId: state.blankChannelId,
-          blankChannelId: state.snippetChannelId,
+          snippetChannelId: blank,
+          blankChannelId: snippet,
         },
-        "Swap channels after manual repost"
+        "Swap channels after manual repost",
+        job.channelsStateSha
       );
       job.step = "done";
       job.status = "done";
       await writeRepostJob(job);
-      return jsonJob();
+      return res.status(200).json(stripRepostJobForApi(job));
     }
 
-    return jsonJob();
-
-    async function jsonJob() {
-      const finalJob = await readRepostJob();
-      return res.status(200).json(stripJob(finalJob!));
-    }
+    return res.status(200).json(stripRepostJobForApi(job));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Chunk failed";
     const cur = await readRepostJob();
@@ -132,14 +140,8 @@ export default async function handler(
       cur.errorMessage = msg;
       cur.step = "done";
       await writeRepostJob(cur);
-      return res.status(500).json(stripJob(cur));
+      return res.status(500).json(stripRepostJobForApi(cur));
     }
     return res.status(500).json({ error: msg });
   }
-}
-
-function stripJob(j: RepostJobState) {
-  const { _postIndex: _i, ...rest } = j;
-  void _i;
-  return rest;
 }

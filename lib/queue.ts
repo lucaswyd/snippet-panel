@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { QueueItem } from "@/lib/snippets";
+import type { QueueItem, Snippet } from "@/lib/snippets";
 
 /**
  * Vercel serverless FS is read-only except /tmp. Local dev uses ./state.
@@ -81,5 +81,9 @@ export interface RepostJobState {
   errorMessage: string | null;
   blankChannelId: string;
   snippetChannelId: string;
+  /** Set at job creation; used to update channels.json without re-fetching during repost. */
+  channelsStateSha?: string;
+  /** Filled in loading step; all posting chunks read only this (no GitHub snippet list). */
+  cachedSnippets?: Snippet[];
   _postIndex?: number;
 }

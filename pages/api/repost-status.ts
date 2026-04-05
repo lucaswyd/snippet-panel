@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { stripRepostJobForApi } from "@/lib/repost-job-api";
 import { readRepostJob } from "@/lib/repost-job-store";
 export default async function handler(
   req: NextApiRequest,
@@ -16,7 +17,5 @@ export default async function handler(
   if (!job || job.jobId !== jobId) {
     return res.status(404).json({ error: "Job not found" });
   }
-  const { _postIndex: _p, ...rest } = job;
-  void _p;
-  return res.status(200).json(rest as Record<string, unknown>);
+  return res.status(200).json(stripRepostJobForApi(job));
 }

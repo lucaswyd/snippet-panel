@@ -81,9 +81,13 @@ export async function getChannelsState(octokit: Octokit): Promise<ChannelsState>
 export async function putChannelsState(
   octokit: Octokit,
   state: ChannelsState,
-  message: string
+  message: string,
+  /** If set (e.g. from repost job), skips a GitHub read for the blob SHA. */
+  knownChannelsSha?: string
 ): Promise<void> {
-  const { sha } = await getFileContent(octokit, "state/channels.json");
+  const sha =
+    knownChannelsSha ??
+    (await getFileContent(octokit, "state/channels.json")).sha;
   await octokit.rest.repos.createOrUpdateFileContents({
     owner: owner(),
     repo: repo(),
@@ -181,6 +185,7 @@ export async function createInitialRepostJobOnGitHub(
     errorMessage: null,
     blankChannelId: state.blankChannelId,
     snippetChannelId: state.snippetChannelId,
+    channelsStateSha: channelsFile.sha,
     _postIndex: 0,
   };
   const body = JSON.stringify(job, null, 2);
