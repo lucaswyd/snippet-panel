@@ -42,7 +42,7 @@ export default async function handler(
 
   const id = uuidv4();
   const createdAt = new Date().toISOString();
-  const fileBase = snippetFilename(body.date, body.title);
+  const fileBase = snippetFilename(body.title);
   const snippetPath = `snippets/${fileBase}`;
 
   const snippet: Snippet = {

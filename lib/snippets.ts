@@ -27,7 +27,7 @@ export type QueueStatus =
 
 export interface QueueItem {
   id: string;
-  /** Repo path e.g. snippets/2026-04-03-Song.json */
+  /** Repo path e.g. snippets/Doin Good.json */
   snippetPath: string;
   snippet: Snippet;
   status: QueueStatus;
@@ -119,19 +119,31 @@ export function buildNewSnippetsMessages(s: Snippet): string[] {
 }
 
 export function separatorMessage(): string {
-  return BLANK_EMOJI;
+  return "==============================";
 }
 
-/** Safe filename piece from title */
+/** Safe filename piece from title (underscores, alnum) — legacy helper. */
 export function slugifyTitle(title: string): string {
-  return title
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "_")
-    .replace(/_+/g, "_")
-    .slice(0, 80) || "Untitled";
+  return (
+    title
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "_")
+      .replace(/_+/g, "_")
+      .slice(0, 80) || "Untitled"
+  );
 }
 
-export function snippetFilename(date: string, title: string): string {
-  return `${date}-${slugifyTitle(title)}.json`;
+/**
+ * JSON file under `snippets/`, e.g. `Doin Good.json`.
+ * Strips only characters illegal in paths (`\ / : * ? " < > |`).
+ */
+export function snippetFilename(title: string): string {
+  const base = title
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 200);
+  return `${base || "Untitled"}.json`;
 }
