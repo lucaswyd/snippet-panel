@@ -7,11 +7,36 @@ import {
 
 const API = "https://discord.com/api/v10";
 
+/** Webhook `wait=true` + Discord can be slow; cap stall time so CI doesn’t hang forever. */
+const WEBHOOK_HTTP_TIMEOUT_MS = Number(
+  process.env.DISCORD_WEBHOOK_HTTP_TIMEOUT_MS ?? 180_000
+);
+/** Bot REST (list/delete/overwrite). */
+const BOT_HTTP_TIMEOUT_MS = Number(
+  process.env.DISCORD_BOT_HTTP_TIMEOUT_MS ?? 120_000
+);
+
 /** Pacing after a successful webhook execute (429s wait via retry, not this). */
 const WEBHOOK_POST_GAP_MS = 150;
 /** Pacing after successful bot REST calls (429 handled in discordFetch). */
 const BOT_REST_GAP_MS = 250;
 const WEBHOOK_429_MAX_ATTEMPTS = 500;
+/** Avoid sleeping hours on bad Retry-After values; log if capped. */
+const WEBHOOK_429_MAX_WAIT_SEC = Number(
+  process.env.DISCORD_WEBHOOK_429_MAX_WAIT_SEC ?? 900
+);
+
+function abortWithTimeout(
+  ms: number,
+  existing?: AbortSignal | null
+): AbortSignal {
+  const t = AbortSignal.timeout(ms);
+  if (!existing) return t;
+  if (typeof AbortSignal.any === "function") {
+    return AbortSignal.any([t, existing]);
+  }
+  return t;
+}
 
 export const VIEW_CHANNEL_BIT = 1024;
 export const VIEW_ROLE_ID = "1429636292110454816";
@@ -28,11 +53,23 @@ async function executeWebhookPost(
   jsonBody: Record<string, unknown>
 ): Promise<void> {
   for (let attempt = 0; attempt < WEBHOOK_429_MAX_ATTEMPTS; attempt++) {
-    const res = await fetch(fullUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(jsonBody),
-    });
+    let res: Response;
+    try {
+      res = await fetch(fullUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jsonBody),
+        signal: abortWithTimeout(WEBHOOK_HTTP_TIMEOUT_MS),
+      });
+    } catch (e) {
+      const name = e instanceof Error ? e.name : "";
+      if (name === "AbortError" || name === "TimeoutError") {
+        throw new Error(
+          `Webhook request timed out after ${WEBHOOK_HTTP_TIMEOUT_MS}ms (raise DISCORD_WEBHOOK_HTTP_TIMEOUT_MS if Discord is legitimately slow)`
+        );
+      }
+      throw e;
+    }
 
     if (res.status === 429) {
       const headerRa = res.headers.get("retry-after");
@@ -45,6 +82,16 @@ async function executeWebhookPost(
         } catch {
           waitSec = 1;
         }
+      }
+      if (waitSec > WEBHOOK_429_MAX_WAIT_SEC) {
+        console.warn(
+          `[discord] webhook 429 Retry-After ${waitSec}s capped to ${WEBHOOK_429_MAX_WAIT_SEC}s (attempt ${attempt + 1})`
+        );
+        waitSec = WEBHOOK_429_MAX_WAIT_SEC;
+      } else if (attempt === 0 || attempt % 5 === 0) {
+        console.warn(
+          `[discord] webhook 429: waiting ${waitSec}s (attempt ${attempt + 1}/${WEBHOOK_429_MAX_ATTEMPTS})`
+        );
       }
       await sleep(Math.ceil(waitSec * 1000) + 25);
       continue;
@@ -74,7 +121,21 @@ async function discordFetch(
   url: string,
   init?: RequestInit
 ): Promise<Response> {
-  const res = await fetch(url, init);
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      signal: abortWithTimeout(BOT_HTTP_TIMEOUT_MS, init?.signal),
+    });
+  } catch (e) {
+    const name = e instanceof Error ? e.name : "";
+    if (name === "AbortError" || name === "TimeoutError") {
+      throw new Error(
+        `Discord API request timed out after ${BOT_HTTP_TIMEOUT_MS}ms (${url.slice(0, 80)}…)`
+      );
+    }
+    throw e;
+  }
   if (res.status === 429) {
     const ra = res.headers.get("retry-after");
     const ms = ra ? Math.ceil(parseFloat(ra) * 1000) : 1000;

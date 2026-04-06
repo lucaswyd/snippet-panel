@@ -56,14 +56,25 @@ export async function runFullArchivePost(
 
   const state = await getChannelsState(octokit);
 
-  for (const s of sorted) {
-    if (!(s.tagged_media?.length > 0)) continue;
+  const toPost = sorted.filter((s) => (s.tagged_media?.length ?? 0) > 0);
+  const n = toPost.length;
+  console.log(`[full-archive-post] posting ${n} snippet(s) to blank channel ${state.blankChannelId}`);
+
+  for (let i = 0; i < toPost.length; i++) {
+    const s = toPost[i];
+    console.log(
+      `[full-archive-post] ${i + 1}/${n} — ${s.title} (${(s.tagged_media?.length ?? 0)} links)`
+    );
     await postSnippetSwapFlow(state.blankChannelId, s);
   }
 
+  console.log("[full-archive-post] deleting messages in snippet channel…");
+
   await deleteMessagesInChannel(state.snippetChannelId);
+  console.log("[full-archive-post] updating channel permissions…");
   await setRoleChannelOverwrite(state.blankChannelId, VIEW_ROLE_ID, true);
   await setRoleChannelOverwrite(state.snippetChannelId, VIEW_ROLE_ID, false);
+  console.log("[full-archive-post] committing channels.json…");
   await putChannelsState(
     octokit,
     {
@@ -78,7 +89,10 @@ export async function runFullArchivePost(
   if (opts.mode === "queue" && opts.isNew) {
     const fresh = await getSnippetAtPath(octokit, opts.snippetPath);
     if (fresh.tagged_media?.length) {
+      console.log("[full-archive-post] new-snippet webhook…");
       await postSnippetNewWebhook(fresh);
     }
   }
+
+  console.log("[full-archive-post] done");
 }
