@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { usePostingEstimate } from "@/hooks/usePostingEstimate";
+import { useRepost } from "@/components/RepostContext";
 import type { QueueItem } from "@/lib/snippets";
 
 function badgeClass(status: QueueItem["status"]): string {
@@ -39,6 +40,14 @@ function label(status: QueueItem["status"]): string {
 export default function QueuePanel() {
   const [items, setItems] = useState<QueueItem[]>([]);
   const { data: est } = usePostingEstimate(true);
+  const {
+    repostUiVisible,
+    job,
+    running,
+    error: repostError,
+    openRepostModal,
+    dismissRepostJob,
+  } = useRepost();
 
   const load = () => {
     void fetch("/api/queue")
@@ -90,9 +99,100 @@ export default function QueuePanel() {
           <span className="mono">{est.queueFullPipeline.summary}</span>.
         </p>
       )}
-      {sorted.length === 0 ? (
+      {repostUiVisible && (
+        <div
+          className="queue-item"
+          role="button"
+          tabIndex={0}
+          onClick={() => openRepostModal()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openRepostModal();
+            }
+          }}
+          style={{ cursor: "pointer", marginBottom: "0.75rem" }}
+        >
+          <div
+            className="row-between"
+            style={{ alignItems: "flex-start", gap: "0.5rem" }}
+          >
+            <div>
+              <div className="mono" style={{ fontSize: "0.9rem" }}>
+                Repost all snippets
+              </div>
+              <div className="subtle" style={{ marginTop: "0.25rem" }}>
+                {running
+                  ? "In progress — click for details"
+                  : job?.status === "done"
+                    ? "Finished"
+                    : job?.status === "error"
+                      ? "Failed"
+                      : "…"}
+              </div>
+            </div>
+            <span
+              className={
+                job?.status === "done"
+                  ? "badge badge-done"
+                  : job?.status === "error"
+                    ? "badge badge-error"
+                    : running
+                      ? "badge badge-posting"
+                      : "badge badge-pending"
+              }
+            >
+              {job?.status === "done"
+                ? "Done ✓"
+                : job?.status === "error"
+                  ? "Error"
+                  : running
+                    ? "Running…"
+                    : "…"}
+            </span>
+          </div>
+          {repostError && (
+            <p
+              className="mono"
+              style={{
+                color: "var(--danger)",
+                fontSize: "0.75rem",
+                margin: "0.5rem 0 0",
+              }}
+            >
+              {repostError}
+            </p>
+          )}
+          {job?.status === "error" && job.errorMessage && (
+            <p
+              className="mono"
+              style={{
+                color: "var(--danger)",
+                fontSize: "0.75rem",
+                margin: "0.35rem 0 0",
+              }}
+            >
+              {job.errorMessage}
+            </p>
+          )}
+          {(job?.status === "done" || job?.status === "error") && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              style={{ marginTop: "0.65rem", padding: "0.35rem 0.65rem" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissRepostJob();
+              }}
+            >
+              Dismiss
+            </button>
+          )}
+        </div>
+      )}
+      {sorted.length === 0 && !repostUiVisible ? (
         <p className="subtle">No items yet.</p>
-      ) : (
+      ) : sorted.length > 0 ? (
         sorted.map((q) => (
           <div key={q.id} className="queue-item">
             <div
@@ -133,7 +233,7 @@ export default function QueuePanel() {
             )}
           </div>
         ))
-      )}
+      ) : null}
     </div>
   );
 }

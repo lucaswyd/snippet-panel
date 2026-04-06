@@ -3,10 +3,11 @@ import Head from "next/head";
 import SnippetForm from "@/components/SnippetForm";
 import QueuePanel from "@/components/QueuePanel";
 import RepostModal from "@/components/RepostModal";
+import { RepostProvider, useRepost } from "@/components/RepostContext";
 
-export default function Home() {
+function HomeInner() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [repostOpen, setRepostOpen] = useState(false);
+  const { openRepostFromMenu } = useRepost();
 
   return (
     <>
@@ -61,7 +62,7 @@ export default function Home() {
                     type="button"
                     onClick={() => {
                       setMenuOpen(false);
-                      setRepostOpen(true);
+                      openRepostFromMenu();
                     }}
                   >
                     Repost snippets
@@ -96,7 +97,15 @@ export default function Home() {
           }
         `}</style>
       </div>
-      <RepostModal open={repostOpen} onClose={() => setRepostOpen(false)} />
+      <RepostModal />
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <RepostProvider>
+      <HomeInner />
+    </RepostProvider>
   );
 }

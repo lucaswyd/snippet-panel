@@ -10,7 +10,19 @@ import { getOctokit, putChannelsState } from "@/lib/github";
 import { loadSortedSnippetsFromGitHub } from "@/lib/processor";
 import { stripRepostJobForApi } from "@/lib/repost-job-api";
 import { readRepostJob, writeRepostJob } from "@/lib/repost-job-store";
+import { scheduleRepostChunkContinuation } from "@/lib/repost-schedule-next";
 import type { RepostJobState } from "@/lib/queue";
+
+function jsonChunk(
+  res: NextApiResponse,
+  job: RepostJobState,
+  jobId: string
+) {
+  if (job.status === "running") {
+    scheduleRepostChunkContinuation(jobId);
+  }
+  return res.status(200).json(stripRepostJobForApi(job));
+}
 
 /**
  * One snippet per chunk keeps each invocation under Vercel time limits.
@@ -69,7 +81,7 @@ export default async function handler(
       job._postIndex = 0;
       job.snippetsPosted = 0;
       await writeRepostJob(job);
-      return res.status(200).json(stripRepostJobForApi(job));
+      return jsonChunk(res, job, jobId);
     }
 
     if (job.step === "posting") {
@@ -80,7 +92,7 @@ export default async function handler(
         job.snippetsPosted = 0;
         job.snippetsTotal = 0;
         await writeRepostJob(job);
-        return res.status(200).json(stripRepostJobForApi(job));
+        return jsonChunk(res, job, jobId);
       }
 
       const sorted = job.cachedSnippets;
@@ -97,7 +109,7 @@ export default async function handler(
         job.step = "deleting";
       }
       await writeRepostJob(job);
-      return res.status(200).json(stripRepostJobForApi(job));
+      return jsonChunk(res, job, jobId);
     }
 
     if (job.step === "deleting") {
@@ -107,7 +119,7 @@ export default async function handler(
         job.step = "permissions";
       }
       await writeRepostJob(job);
-      return res.status(200).json(stripRepostJobForApi(job));
+      return jsonChunk(res, job, jobId);
     }
 
     if (job.step === "permissions") {
@@ -131,7 +143,7 @@ export default async function handler(
       return res.status(200).json(stripRepostJobForApi(job));
     }
 
-    return res.status(200).json(stripRepostJobForApi(job));
+    return jsonChunk(res, job, jobId);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Chunk failed";
     const cur = await readRepostJob();
