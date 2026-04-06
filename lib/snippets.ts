@@ -119,7 +119,7 @@ export function buildNewSnippetsMessages(s: Snippet): string[] {
 }
 
 export function separatorMessage(): string {
-  return "==============================";
+  return "------------------------------";
 }
 
 /** Safe filename piece from title (underscores, alnum) — legacy helper. */

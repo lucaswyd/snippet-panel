@@ -33,6 +33,9 @@ yarn-error.log*
 # Generated from assets/fonts at build (see scripts/sync-public-font.cjs)
 /public/fonts/SFPRODISPLAYMEDIUM.OTF
 
+# Generated at build from snippets/*.json (see scripts/bundle-snippets.mjs)
+/public/data/snippets.json
+
 # ephemeral queue on Vercel (not committed)
 /state/queue.json
 # repost job may exist in repo from GitHub API on Vercel — do not ignore

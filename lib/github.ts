@@ -122,16 +122,51 @@ export async function getSnippetAtPath(
   return JSON.parse(content) as Snippet;
 }
 
+/**
+ * One REST call to list `snippets/`, then each file body via `download_url` (raw host).
+ * Avoids N separate `repos.getContent` API calls that burned primary rate limits.
+ */
 export async function getAllSnippets(octokit: Octokit): Promise<Snippet[]> {
-  const paths = await listSnippetPaths(octokit);
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) throw new Error("GITHUB_TOKEN is not set");
+
+  const { data } = await octokit.rest.repos.getContent({
+    owner: owner(),
+    repo: repo(),
+    path: "snippets",
+  });
+
+  if (!Array.isArray(data)) {
+    return [];
+  }
+
+  const auth =
+    token.startsWith("github_pat_") || token.startsWith("gho_")
+      ? `Bearer ${token}`
+      : `token ${token}`;
+  const headers: HeadersInit = {
+    Authorization: auth,
+    Accept: "application/vnd.github.v3.raw",
+    "User-Agent": "snippet-panel",
+  };
+
   const out: Snippet[] = [];
-  for (const p of paths) {
+
+  for (const item of data) {
+    if (item.type !== "file" || !item.name.endsWith(".json")) continue;
+    const url = item.download_url;
+    if (!url || typeof url !== "string") continue;
+
     try {
-      out.push(await getSnippetAtPath(octokit, p));
+      const res = await fetch(url, { headers });
+      if (!res.ok) continue;
+      const text = await res.text();
+      out.push(JSON.parse(text) as Snippet);
     } catch {
       /* skip bad files */
     }
   }
+
   return out;
 }
 

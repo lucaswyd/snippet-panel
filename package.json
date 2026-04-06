@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "prebuild": "node scripts/sync-public-font.cjs",
-    "predev": "node scripts/sync-public-font.cjs",
+    "prebuild": "node scripts/sync-public-font.cjs && node scripts/bundle-snippets.mjs",
+    "predev": "node scripts/sync-public-font.cjs && node scripts/bundle-snippets.mjs",
+    "bundle-snippets": "node scripts/bundle-snippets.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
