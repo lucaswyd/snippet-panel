@@ -3,14 +3,14 @@
   "status": "running",
   "step": "posting",
   "snippetsTotal": 141,
-  "snippetsPosted": 37,
+  "snippetsPosted": 38,
   "messagesTotal": 0,
   "messagesDeleted": 0,
   "errorMessage": null,
   "blankChannelId": "1488379652668915885",
   "snippetChannelId": "1490100886024880371",
   "channelsStateSha": "8fd88a2bd01f06391260a13d507943c4e58bed62",
-  "_postIndex": 37,
+  "_postIndex": 38,
   "cachedSnippets": [
     {
       "createdAt": "2026-04-03T05:00:00.000Z",
