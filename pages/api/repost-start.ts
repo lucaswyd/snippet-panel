@@ -1,7 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { v4 as uuidv4 } from "uuid";
 import { createInitialRepostJob } from "@/lib/repost-job-store";
-import { scheduleRepostChunkContinuation } from "@/lib/repost-schedule-next";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,7 +14,6 @@ export default async function handler(
   try {
     const jobId = uuidv4();
     await createInitialRepostJob(jobId);
-    scheduleRepostChunkContinuation(jobId);
     return res.status(200).json({ jobId });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to start job";

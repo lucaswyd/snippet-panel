@@ -38,9 +38,9 @@ export default function RepostModal() {
           <>
             <p style={{ lineHeight: 1.5, marginBottom: "1rem" }}>
               This will repost all snippets to the blank channel and swap
-              channel visibility. You can close this window or the whole tab —
-              the repost keeps running on the server; open the queue row anytime
-              to watch progress.
+              channel visibility. You can close this dialog and keep working —
+              progress stays in the Processing queue. Leave this tab open until
+              the repost finishes (the browser drives each step).
             </p>
             {est && (
               <p
@@ -137,7 +137,7 @@ export default function RepostModal() {
             )}
             {running && (
               <p className="subtle" style={{ marginTop: "1rem" }}>
-                Working… (safe to close this tab — the server continues)
+                Working… (keep this tab open; you can close this dialog)
               </p>
             )}
           </div>

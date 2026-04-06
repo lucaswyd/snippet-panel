@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { parseJsonResponse } from "@/lib/parse-json-response";
@@ -25,7 +26,7 @@ type Ctx = {
   phase: "confirm" | "run";
   jobId: string | null;
   job: RepostJobApi | null;
-  /** True while the repost job status on the server is running (server continues even if tab is closed). */
+  /** True while the server job is running (client is driving /api/repost-chunk in a loop). */
   running: boolean;
   error: string | null;
   /** Row in Processing queue + resume after refresh while running */
@@ -52,39 +53,56 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
   const [job, setJob] = useState<RepostJobApi | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [repostUiVisible, setRepostUiVisible] = useState(false);
+  const [chunkLoopActive, setChunkLoopActive] = useState(false);
 
-  const running = job?.status === "running";
+  const chunkBusy = useRef(false);
 
-  useEffect(() => {
-    if (!jobId || job?.status !== "running") return;
+  const running =
+    job?.status === "running" || chunkLoopActive;
 
-    const tick = async () => {
-      try {
-        const r = await fetch(
-          `/api/repost-status?jobId=${encodeURIComponent(jobId)}`
-        );
-        if (!r.ok) return;
-        const j = await parseJsonResponse<RepostJobApi>(r);
-        setJob(j);
-        if (j.status === "error" && j.errorMessage) {
-          setError(j.errorMessage);
+  const runChunkLoop = useCallback(async (id: string) => {
+    if (chunkBusy.current) return;
+    chunkBusy.current = true;
+    setChunkLoopActive(true);
+    setError(null);
+    try {
+      let lastStatus = "running" as string;
+      while (lastStatus === "running") {
+        const chunkRes = await fetch("/api/repost-chunk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId: id }),
+        });
+        const chunk = await parseJsonResponse<
+          RepostJobApi & { error?: string }
+        >(chunkRes);
+        if (!chunkRes.ok) {
+          throw new Error(
+            chunk.errorMessage ||
+              (typeof chunk.error === "string" ? chunk.error : null) ||
+              "Chunk failed"
+          );
         }
-        if (j.status === "done" || j.status === "error") {
-          try {
-            localStorage.removeItem(LS_JOB_ID);
-          } catch {
-            /* private mode */
-          }
+        setJob(chunk);
+        lastStatus = chunk.status;
+        if (chunk.status === "error") {
+          setError(chunk.errorMessage || "Unknown error");
+          break;
         }
-      } catch {
-        /* ignore transient poll errors */
+        if (chunk.status === "done") break;
       }
-    };
-
-    void tick();
-    const t = setInterval(() => void tick(), 2000);
-    return () => clearInterval(t);
-  }, [jobId, job?.status]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed");
+    } finally {
+      chunkBusy.current = false;
+      setChunkLoopActive(false);
+      try {
+        localStorage.removeItem(LS_JOB_ID);
+      } catch {
+        /* private mode */
+      }
+    }
+  }, []);
 
   const startRepost = useCallback(async () => {
     setError(null);
@@ -111,31 +129,13 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
       } catch {
         /* ignore */
       }
-      try {
-        const r = await fetch(
-          `/api/repost-status?jobId=${encodeURIComponent(id)}`
-        );
-        if (r.ok) {
-          const j = await parseJsonResponse<RepostJobApi>(r);
-          setJob(j);
-          if (j.status === "error" && j.errorMessage) setError(j.errorMessage);
-          if (j.status === "done" || j.status === "error") {
-            try {
-              localStorage.removeItem(LS_JOB_ID);
-            } catch {
-              /* ignore */
-            }
-          }
-        }
-      } catch {
-        /* ignore */
-      }
+      await runChunkLoop(id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
       setPhase("confirm");
       setJob(null);
     }
-  }, []);
+  }, [runChunkLoop]);
 
   const openRepostFromMenu = useCallback(() => {
     if (running) {
@@ -206,7 +206,9 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
         setRepostUiVisible(true);
         setPhase("run");
 
-        if (j.status !== "running") {
+        if (j.status === "running") {
+          void runChunkLoop(id);
+        } else {
           localStorage.removeItem(LS_JOB_ID);
         }
       } catch {
@@ -220,7 +222,7 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [runChunkLoop]);
 
   const value = useMemo<Ctx>(
     () => ({

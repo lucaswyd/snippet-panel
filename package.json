@@ -12,7 +12,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@vercel/functions": "^1.6.0",
     "formidable": "^3.5.1",
     "next": "14.2.3",
     "octokit": "^3.1.2",
