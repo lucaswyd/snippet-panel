@@ -28,6 +28,7 @@ jobs:
       - name: Install
         run: npm ci
 
+      # Discord env must be duplicated from Vercel → GitHub Actions secrets (same names).
       - name: Run full archive post
         id: run_post
         env:
@@ -37,6 +38,11 @@ jobs:
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          WEBHOOK_SNIPPETS: ${{ secrets.WEBHOOK_SNIPPETS }}
+          WEBHOOK_BLANK: ${{ secrets.WEBHOOK_BLANK }}
+          WEBHOOK_NEW_SNIPPETS: ${{ secrets.WEBHOOK_NEW_SNIPPETS }}
+          CHANNEL_A_ID: ${{ secrets.CHANNEL_A_ID }}
+          CHANNEL_B_ID: ${{ secrets.CHANNEL_B_ID }}
         run: npx tsx scripts/full-archive-post.ts
 
       - name: Queue success → Vercel

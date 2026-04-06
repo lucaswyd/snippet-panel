@@ -89,8 +89,8 @@ const DEFAULT_CHANNEL_B = "1488379652668915885";
 
 /** Webhook URL for a physical channel (A/B). WEBHOOK_SNIPPETS → A, WEBHOOK_BLANK → B. */
 export function webhookUrlForChannelId(channelId: string): string {
-  const a = process.env.CHANNEL_A_ID ?? DEFAULT_CHANNEL_A;
-  const b = process.env.CHANNEL_B_ID ?? DEFAULT_CHANNEL_B;
+  const a = process.env.CHANNEL_A_ID || DEFAULT_CHANNEL_A;
+  const b = process.env.CHANNEL_B_ID || DEFAULT_CHANNEL_B;
   if (channelId === a) return process.env.WEBHOOK_SNIPPETS ?? "";
   if (channelId === b) return process.env.WEBHOOK_BLANK ?? "";
   return "";
