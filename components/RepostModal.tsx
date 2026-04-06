@@ -16,8 +16,6 @@ export default function RepostModal() {
 
   if (!modalOpen) return null;
 
-  const st = job?.step;
-
   return (
     <div className="modal-backdrop">
       <div className="panel modal">
@@ -37,10 +35,10 @@ export default function RepostModal() {
         {phase === "confirm" && (
           <>
             <p style={{ lineHeight: 1.5, marginBottom: "1rem" }}>
-              This will repost all snippets to the blank channel and swap
-              channel visibility. You can close this dialog and keep working —
-              progress stays in the Processing queue. Leave this tab open until
-              the repost finishes (the browser drives each step).
+              This will repost the full archive to the blank channel and swap
+              channel visibility. The heavy work runs in{" "}
+              <strong>GitHub Actions</strong> (long timeout). You can close this
+              tab — check the Processing queue or the Actions tab on GitHub.
             </p>
             {est && (
               <p
@@ -75,55 +73,28 @@ export default function RepostModal() {
 
         {phase === "run" && (
           <div className="mono" style={{ fontSize: "0.85rem" }}>
-            {est && (
-              <p
-                className="subtle"
-                style={{
-                  fontSize: "0.8rem",
-                  marginBottom: "0.85rem",
-                  lineHeight: 1.45,
-                }}
-              >
-                Typical time for this archive was {est.repost.summary}. Progress
-                below is step-by-step.
-              </p>
-            )}
+            <p
+              className="subtle"
+              style={{
+                fontSize: "0.85rem",
+                lineHeight: 1.5,
+                marginBottom: "1rem",
+              }}
+            >
+              Running <strong>full-archive-post</strong> on GitHub Actions
+              (post all snippets, clear snippet channel, swap permissions). Safe
+              to leave this page.
+            </p>
             <StepLine
-              active={st === "loading"}
-              done={
-                st != null &&
-                st !== "loading" &&
-                [
-                  "posting",
-                  "deleting",
-                  "permissions",
-                  "done",
-                ].includes(st)
-              }
-              label="Loading snippets…"
-            />
-            <StepLine
-              active={st === "posting"}
-              done={
-                st != null &&
-                ["deleting", "permissions", "done"].includes(st)
-              }
-              label={`Posting snippets… ${job ? `${job.snippetsPosted}/${Math.max(job.snippetsTotal, 1)}` : ""}`}
-            />
-            <StepLine
-              active={st === "deleting"}
-              done={st != null && ["permissions", "done"].includes(st)}
-              label={`Deleting old messages… (${job?.messagesDeleted ?? 0} removed)`}
-            />
-            <StepLine
-              active={st === "permissions"}
-              done={st === "done" || job?.status === "done"}
-              label="Updating permissions…"
-            />
-            <StepLine
-              active={false}
+              active={running && job?.status !== "done"}
               done={job?.status === "done"}
-              label="Done ✓"
+              label={
+                job?.status === "done"
+                  ? "Done ✓"
+                  : job?.status === "error"
+                    ? "Failed"
+                    : "Workflow in progress…"
+              }
             />
             {error && (
               <p style={{ color: "var(--danger)", marginTop: "1rem" }}>
@@ -137,7 +108,7 @@ export default function RepostModal() {
             )}
             {running && (
               <p className="subtle" style={{ marginTop: "1rem" }}>
-                Working… (keep this tab open; you can close this dialog)
+                Polling workflow status…
               </p>
             )}
           </div>

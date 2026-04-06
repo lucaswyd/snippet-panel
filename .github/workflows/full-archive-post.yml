@@ -1,0 +1,70 @@
+name: Full archive post
+
+on:
+  repository_dispatch:
+    types: [full-post-repost, full-post-queue]
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Run full archive post
+        id: run_post
+        env:
+          FULL_POST_ACTION: ${{ github.event.action }}
+          FULL_POST_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: npx tsx scripts/full-archive-post.ts
+
+      - name: Queue success → Vercel
+        if: success() && github.event.action == 'full-post-queue'
+        env:
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
+          VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: |
+          set -euo pipefail
+          Q=$(echo "$PAYLOAD" | jq -r .queueId)
+          BASE="${VERCEL_APP_URL%/}"
+          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"$Q\",\"ok\":true}"
+
+      - name: Queue failure → Vercel
+        if: failure() && github.event.action == 'full-post-queue'
+        env:
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
+          VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: |
+          set -euo pipefail
+          Q=$(echo "$PAYLOAD" | jq -r .queueId)
+          BASE="${VERCEL_APP_URL%/}"
+          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"$Q\",\"ok\":false,\"errorMessage\":\"Full archive post workflow failed\"}"

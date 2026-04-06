@@ -123,7 +123,7 @@ export default function QueuePanel() {
               </div>
               <div className="subtle" style={{ marginTop: "0.25rem" }}>
                 {running
-                  ? "In progress — click for details"
+                  ? "GitHub Actions — click for details"
                   : job?.status === "done"
                     ? "Finished"
                     : job?.status === "error"

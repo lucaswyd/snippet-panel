@@ -4,12 +4,12 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import { parseJsonResponse } from "@/lib/parse-json-response";
 
-const LS_JOB_ID = "snippet_panel_repost_job_id";
+/** ISO time from POST /api/trigger-full-post-repost — correlates with GitHub Actions run */
+const LS_FULL_POST_SINCE = "snippet_panel_full_post_since";
 
 export type RepostJobApi = {
   jobId?: string;
@@ -21,15 +21,24 @@ export type RepostJobApi = {
   errorMessage: string | null;
 };
 
+type WorkflowStatusPayload = {
+  found: boolean;
+  status?: string;
+  conclusion?: string | null;
+  running?: boolean;
+  done?: boolean;
+  failed?: boolean;
+  success?: boolean;
+};
+
 type Ctx = {
   modalOpen: boolean;
   phase: "confirm" | "run";
+  /** ISO timestamp used to match the GitHub Actions workflow run */
   jobId: string | null;
   job: RepostJobApi | null;
-  /** True while the server job is running (client is driving /api/repost-chunk in a loop). */
   running: boolean;
   error: string | null;
-  /** Row in Processing queue + resume after refresh while running */
   repostUiVisible: boolean;
   openRepostFromMenu: () => void;
   closeModal: () => void;
@@ -46,6 +55,15 @@ export function useRepost(): Ctx {
   return c;
 }
 
+const emptyJob = (status: RepostJobApi["status"], step: string): RepostJobApi => ({
+  status,
+  step,
+  snippetsTotal: 0,
+  snippetsPosted: 0,
+  messagesDeleted: 0,
+  errorMessage: null,
+});
+
 export function RepostProvider({ children }: { children: React.ReactNode }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [phase, setPhase] = useState<"confirm" | "run">("confirm");
@@ -53,89 +71,84 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
   const [job, setJob] = useState<RepostJobApi | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [repostUiVisible, setRepostUiVisible] = useState(false);
-  const [chunkLoopActive, setChunkLoopActive] = useState(false);
 
-  const chunkBusy = useRef(false);
+  const running = job?.status === "running";
 
-  const running =
-    job?.status === "running" || chunkLoopActive;
+  useEffect(() => {
+    if (!jobId || job?.status !== "running") return;
 
-  const runChunkLoop = useCallback(async (id: string) => {
-    if (chunkBusy.current) return;
-    chunkBusy.current = true;
-    setChunkLoopActive(true);
-    setError(null);
-    try {
-      let lastStatus = "running" as string;
-      while (lastStatus === "running") {
-        const chunkRes = await fetch("/api/repost-chunk", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId: id }),
-        });
-        const chunk = await parseJsonResponse<
-          RepostJobApi & { error?: string }
-        >(chunkRes);
-        if (!chunkRes.ok) {
-          throw new Error(
-            chunk.errorMessage ||
-              (typeof chunk.error === "string" ? chunk.error : null) ||
-              "Chunk failed"
-          );
-        }
-        setJob(chunk);
-        lastStatus = chunk.status;
-        if (chunk.status === "error") {
-          setError(chunk.errorMessage || "Unknown error");
-          break;
-        }
-        if (chunk.status === "done") break;
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed");
-    } finally {
-      chunkBusy.current = false;
-      setChunkLoopActive(false);
+    const tick = async () => {
       try {
-        localStorage.removeItem(LS_JOB_ID);
+        const r = await fetch(
+          `/api/full-post-workflow-status?since=${encodeURIComponent(jobId)}`
+        );
+        if (!r.ok) return;
+        const d = await parseJsonResponse<WorkflowStatusPayload>(r);
+        if (!d.found) return;
+        if (d.running) return;
+        if (d.success) {
+          setJob(emptyJob("done", "done"));
+          setError(null);
+          try {
+            localStorage.removeItem(LS_FULL_POST_SINCE);
+          } catch {
+            /* private mode */
+          }
+          return;
+        }
+        if (d.failed) {
+          const msg = "GitHub Actions workflow failed";
+          setJob((prev) =>
+            prev
+              ? { ...prev, status: "error", step: "done", errorMessage: msg }
+              : emptyJob("error", "done")
+          );
+          setError(msg);
+          try {
+            localStorage.removeItem(LS_FULL_POST_SINCE);
+          } catch {
+            /* ignore */
+          }
+        }
       } catch {
-        /* private mode */
+        /* ignore */
       }
-    }
-  }, []);
+    };
+
+    void tick();
+    const t = setInterval(() => void tick(), 3000);
+    return () => clearInterval(t);
+  }, [jobId, job?.status]);
 
   const startRepost = useCallback(async () => {
     setError(null);
     setPhase("run");
-    setJob({
-      status: "running",
-      step: "loading",
-      snippetsTotal: 0,
-      snippetsPosted: 0,
-      messagesDeleted: 0,
-      errorMessage: null,
-    });
+    setJob(emptyJob("running", "action"));
     try {
-      const start = await fetch("/api/repost-start", { method: "POST" });
-      const data = await parseJsonResponse<{ jobId?: string; error?: string }>(
-        start
-      );
+      const start = await fetch("/api/trigger-full-post-repost", {
+        method: "POST",
+      });
+      const data = await parseJsonResponse<{
+        ok?: boolean;
+        dispatchedAt?: string;
+        error?: string;
+      }>(start);
       if (!start.ok) throw new Error(data.error || "Failed to start");
-      const id = data.jobId as string;
-      setJobId(id);
+      const since = data.dispatchedAt;
+      if (!since) throw new Error("No dispatchedAt");
+      setJobId(since);
       setRepostUiVisible(true);
       try {
-        localStorage.setItem(LS_JOB_ID, id);
+        localStorage.setItem(LS_FULL_POST_SINCE, since);
       } catch {
         /* ignore */
       }
-      await runChunkLoop(id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
       setPhase("confirm");
       setJob(null);
     }
-  }, [runChunkLoop]);
+  }, []);
 
   const openRepostFromMenu = useCallback(() => {
     if (running) {
@@ -172,7 +185,7 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     setPhase("confirm");
     try {
-      localStorage.removeItem(LS_JOB_ID);
+      localStorage.removeItem(LS_FULL_POST_SINCE);
     } catch {
       /* ignore */
     }
@@ -182,38 +195,49 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     let cancelled = false;
     void (async () => {
-      let id: string | null = null;
+      let since: string | null = null;
       try {
-        id = localStorage.getItem(LS_JOB_ID);
+        since = localStorage.getItem(LS_FULL_POST_SINCE);
       } catch {
         return;
       }
-      if (!id) return;
+      if (!since) return;
 
       try {
         const r = await fetch(
-          `/api/repost-status?jobId=${encodeURIComponent(id)}`
+          `/api/full-post-workflow-status?since=${encodeURIComponent(since)}`
         );
         if (!r.ok) {
-          localStorage.removeItem(LS_JOB_ID);
+          localStorage.removeItem(LS_FULL_POST_SINCE);
           return;
         }
-        const j = await parseJsonResponse<RepostJobApi>(r);
+        const d = await parseJsonResponse<WorkflowStatusPayload>(r);
         if (cancelled) return;
 
-        setJobId(id);
-        setJob(j);
+        setJobId(since);
         setRepostUiVisible(true);
         setPhase("run");
 
-        if (j.status === "running") {
-          void runChunkLoop(id);
-        } else {
-          localStorage.removeItem(LS_JOB_ID);
+        if (!d.found || d.running) {
+          setJob(emptyJob("running", "action"));
+          return;
+        }
+        if (d.success) {
+          setJob(emptyJob("done", "done"));
+          localStorage.removeItem(LS_FULL_POST_SINCE);
+          return;
+        }
+        if (d.failed) {
+          setJob({
+            ...emptyJob("error", "done"),
+            errorMessage: "GitHub Actions workflow failed",
+          });
+          setError("GitHub Actions workflow failed");
+          localStorage.removeItem(LS_FULL_POST_SINCE);
         }
       } catch {
         try {
-          localStorage.removeItem(LS_JOB_ID);
+          localStorage.removeItem(LS_FULL_POST_SINCE);
         } catch {
           /* ignore */
         }
@@ -222,7 +246,7 @@ export function RepostProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [runChunkLoop]);
+  }, []);
 
   const value = useMemo<Ctx>(
     () => ({

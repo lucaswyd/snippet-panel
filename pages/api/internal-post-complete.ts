@@ -1,10 +1,15 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { runFullArchivePost } from "@/lib/run-full-archive-post";
-import { readQueue, updateQueueItem } from "@/lib/queue";
+import { updateQueueItem } from "@/lib/queue";
 
-type Body = { queueId?: string; taggedMediaUrls?: string[] };
+type Body = {
+  queueId?: string;
+  ok?: boolean;
+  errorMessage?: string;
+};
 
-/** Legacy direct post (same machine as Vercel queue). Prefer GitHub Actions. */
+/**
+ * Called from GitHub Actions when the full-post-queue workflow finishes.
+ */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -30,25 +35,15 @@ export default async function handler(
     return res.status(400).json({ error: "queueId required" });
   }
 
-  const items = readQueue();
-  const item = items.find((q) => q.id === queueId);
-  if (!item) {
-    return res.status(404).json({ error: "Queue item not found" });
-  }
-
-  try {
-    await runFullArchivePost({
-      mode: "queue",
-      snippetPath: item.snippetPath,
-      isNew: item.isNew,
-      taggedMediaUrls: body.taggedMediaUrls,
-    });
-
+  if (body.ok === true) {
     updateQueueItem(queueId, { status: "done" });
     return res.status(200).json({ ok: true });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : "Post job failed";
-    updateQueueItem(queueId, { status: "error", errorMessage: msg });
-    return res.status(500).json({ error: msg });
   }
+
+  const err =
+    typeof body.errorMessage === "string" && body.errorMessage.trim()
+      ? body.errorMessage.trim()
+      : "Workflow failed";
+  updateQueueItem(queueId, { status: "error", errorMessage: err });
+  return res.status(200).json({ ok: true });
 }

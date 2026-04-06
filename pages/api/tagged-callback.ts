@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { updateQueueItem, readQueue } from "@/lib/queue";
+import { triggerRepositoryDispatch } from "@/lib/trigger-repository-dispatch";
 
 type Body = {
   queueId?: string;
@@ -40,22 +41,19 @@ export default async function handler(
 
   updateQueueItem(queueId, { status: "posting" });
 
-  res.status(200).json({ ok: true, accepted: true });
-
-  const base = process.env.VERCEL_APP_URL;
-  const internal = process.env.CALLBACK_SECRET;
-  if (!base || !internal) return;
-
-  const url = `${base.replace(/\/$/, "")}/api/do-post-job`;
-  void fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-internal-secret": internal,
-    },
-    body: JSON.stringify({
+  try {
+    await triggerRepositoryDispatch("full-post-queue", {
       queueId,
-      taggedMediaUrls: body.taggedMediaUrls,
-    }),
-  }).catch(() => {});
+      snippetPath: item.snippetPath,
+      isNew: item.isNew,
+      taggedMediaUrls: body.taggedMediaUrls ?? [],
+    });
+  } catch (e) {
+    const msg =
+      e instanceof Error ? e.message : "Failed to start full-post workflow";
+    updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    return res.status(500).json({ error: msg });
+  }
+
+  return res.status(200).json({ ok: true, accepted: true });
 }
