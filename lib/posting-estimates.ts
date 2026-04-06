@@ -1,7 +1,9 @@
 import type { Snippet } from "@/lib/snippets";
 
-/** Matches `postToWebhook` / bulk-delete pacing in `lib/discord.ts`. */
-export const DISCORD_GAP_SEC = 0.5;
+/** After each successful webhook execute (`WEBHOOK_POST_GAP_MS` in discord.ts). */
+export const DISCORD_WEBHOOK_GAP_SEC = 0.15;
+/** After each successful bot REST call (`BOT_REST_GAP_MS` in discord.ts). */
+export const DISCORD_BOT_GAP_SEC = 0.25;
 
 /** GitHub read/write + Vercel round-trip per repost chunk (conservative). */
 export const REPOST_CHUNK_OVERHEAD_SEC = 0.45;
@@ -45,11 +47,11 @@ function guessChannelMessageCount(snippets: Snippet[]): number {
   return Math.max(posts * 2, posts + 24);
 }
 
-/** Bulk-delete path: up to 100 per batch, ~0.5s pacing between batches. */
+/** Bulk-delete path: up to 100 per batch, bot REST pacing between batches. */
 export function estimateBulkDeleteSeconds(approxMessageCount: number): number {
   if (approxMessageCount <= 0) return 5;
   const batches = Math.ceil(approxMessageCount / 100);
-  return batches * (1.2 + DISCORD_GAP_SEC);
+  return batches * (1.2 + DISCORD_BOT_GAP_SEC);
 }
 
 /** Permission overwrites + state commit (Discord + GitHub). */
@@ -84,7 +86,7 @@ export function estimatePostingDurations(snippets: Snippet[]): RepostEstimate {
   const n = withTags.length;
 
   const swapPosts = sumSwapPosts(withTags);
-  const postingDiscordSec = swapPosts * DISCORD_GAP_SEC;
+  const postingDiscordSec = swapPosts * DISCORD_WEBHOOK_GAP_SEC;
   const msgGuess = guessChannelMessageCount(snippets);
   const repostChunks =
     1 + // loading
@@ -105,7 +107,7 @@ export function estimatePostingDurations(snippets: Snippet[]): RepostEstimate {
     const c = countNewSnippetsWebhookPosts(s.tagged_media?.length ?? 0);
     if (c > maxNewChannelPosts) maxNewChannelPosts = c;
   }
-  const newExtra = maxNewChannelPosts * DISCORD_GAP_SEC;
+  const newExtra = maxNewChannelPosts * DISCORD_WEBHOOK_GAP_SEC;
   const queueRaw =
     DO_POST_INITIAL_SLEEP_SEC +
     postingDiscordSec +

@@ -7,11 +7,58 @@ import {
 
 const API = "https://discord.com/api/v10";
 
+/** Pacing after a successful webhook execute (429s wait via retry, not this). */
+const WEBHOOK_POST_GAP_MS = 150;
+/** Pacing after successful bot REST calls (429 handled in discordFetch). */
+const BOT_REST_GAP_MS = 250;
+const WEBHOOK_429_MAX_ATTEMPTS = 500;
+
 export const VIEW_CHANNEL_BIT = 1024;
 export const VIEW_ROLE_ID = "1429636292110454816";
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Webhook execute: retry on 429 until success or hard cap (Discord Retry-After / JSON retry_after).
+ */
+async function executeWebhookPost(
+  fullUrl: string,
+  jsonBody: Record<string, unknown>
+): Promise<void> {
+  for (let attempt = 0; attempt < WEBHOOK_429_MAX_ATTEMPTS; attempt++) {
+    const res = await fetch(fullUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(jsonBody),
+    });
+
+    if (res.status === 429) {
+      const headerRa = res.headers.get("retry-after");
+      let waitSec = headerRa ? parseFloat(headerRa) : NaN;
+      if (Number.isNaN(waitSec) || waitSec < 0) {
+        try {
+          const j = (await res.json()) as { retry_after?: number };
+          waitSec =
+            typeof j.retry_after === "number" ? j.retry_after : 1;
+        } catch {
+          waitSec = 1;
+        }
+      }
+      await sleep(Math.ceil(waitSec * 1000) + 25);
+      continue;
+    }
+
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`Webhook post failed: ${res.status} ${t}`);
+    }
+    return;
+  }
+  throw new Error(
+    `Webhook post: exceeded ${WEBHOOK_429_MAX_ATTEMPTS} rate-limit retries`
+  );
 }
 
 function botHeaders(): HeadersInit {
@@ -53,16 +100,8 @@ async function postToWebhook(webhookUrl: string, content: string): Promise<void>
   const url = webhookUrl.includes("?")
     ? `${webhookUrl}&wait=true`
     : `${webhookUrl}?wait=true`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content }),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`Webhook post failed: ${res.status} ${t}`);
-  }
-  await sleep(500);
+  await executeWebhookPost(url, { content });
+  await sleep(WEBHOOK_POST_GAP_MS);
 }
 
 /** Post snippet sequence + separator via webhook (swap channels — not bot). */
@@ -104,31 +143,20 @@ export async function postChannelMessage(
     const t = await res.text();
     throw new Error(`Discord post failed: ${res.status} ${t}`);
   }
-  await sleep(500);
+  await sleep(BOT_REST_GAP_MS);
 }
 
 export async function postSnippetNewWebhook(s: Snippet): Promise<void> {
   const url = process.env.WEBHOOK_NEW_SNIPPETS;
   if (!url) throw new Error("WEBHOOK_NEW_SNIPPETS is not set");
+  const base = url.includes("?") ? `${url}&wait=true` : `${url}?wait=true`;
   const msgs = buildNewSnippetsMessages(s);
   for (const m of msgs) {
-    const res = await fetch(`${url}?wait=true`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: m }),
-    });
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error(`New snippets webhook failed: ${res.status} ${t}`);
-    }
-    await sleep(500);
+    await executeWebhookPost(base, { content: m });
+    await sleep(WEBHOOK_POST_GAP_MS);
   }
-  await fetch(`${url}?wait=true`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ content: separatorMessage() }),
-  });
-  await sleep(500);
+  await executeWebhookPost(base, { content: separatorMessage() });
+  await sleep(WEBHOOK_POST_GAP_MS);
 }
 
 export interface DiscordMessage {
@@ -164,7 +192,7 @@ export async function fetchAllChannelMessages(
     if (page.length === 0) break;
     all.push(...page);
     before = page[page.length - 1].id;
-    await sleep(500);
+    await sleep(BOT_REST_GAP_MS);
   }
   return all;
 }
@@ -183,7 +211,7 @@ async function deleteOneMessage(
     const t = await res.text();
     throw new Error(`Discord delete one: ${res.status} ${t}`);
   }
-  await sleep(500);
+  await sleep(BOT_REST_GAP_MS);
 }
 
 /** Delete up to 100 messages (one API page). Returns how many were deleted. */
@@ -210,7 +238,7 @@ export async function deleteNextMessageBatch(
       await deleteOneMessage(channelId, id);
     }
   }
-  await sleep(500);
+  await sleep(BOT_REST_GAP_MS);
   return ids.length;
 }
 
@@ -245,7 +273,7 @@ export async function deleteMessagesInChannel(channelId: string): Promise<void> 
     if (!res.ok) {
       for (const id of batch) await deleteOneMessage(channelId, id);
     }
-    await sleep(500);
+    await sleep(BOT_REST_GAP_MS);
   }
 
   for (const m of idsOld) {
@@ -274,6 +302,6 @@ export async function setRoleChannelOverwrite(
     const t = await res.text();
     throw new Error(`Discord overwrite: ${res.status} ${t}`);
   }
-  await sleep(500);
+  await sleep(BOT_REST_GAP_MS);
 }
 
