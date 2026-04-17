@@ -8,7 +8,14 @@
   "date": "2025-05-09",
   "ping": false,
   "webhookSelected": "snippet-archive",
-  "messageId": "",
+  "messageId": {
+    "private": {
+      "messageIds": [
+        "1494729280892960908"
+      ],
+      "separatorId": "1494729282650636540"
+    }
+  },
   "released": true,
   "untagged_media": [
     "https://fast-file.com/7ae4c956/download",
