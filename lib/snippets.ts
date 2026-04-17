@@ -22,6 +22,8 @@ export type QueueStatus =
   | "pending"
   | "tagging"
   | "posting"
+  | "posting_private"
+  | "posting_public"
   | "done"
   | "error";
 
@@ -81,6 +83,16 @@ function buildProdLine(s: Snippet): string {
  */
 export function buildSwapChannelMessages(s: Snippet): string[] {
   const urls = s.tagged_media ?? [];
+  return buildSnippetMessagesWithUrls(s, urls);
+}
+
+/** Same text format, but uses untagged_media links (private channel). */
+export function buildPrivateChannelMessages(s: Snippet): string[] {
+  const urls = s.untagged_media ?? [];
+  return buildSnippetMessagesWithUrls(s, urls);
+}
+
+function buildSnippetMessagesWithUrls(s: Snippet, urls: string[]): string[] {
   const preview = formatDateMMDDYY(s.date);
   const statusWord = s.released ? "Released" : "Unreleased";
   const statusPrefix = `**Status:** ${statusWord}`;
@@ -119,7 +131,7 @@ export function buildNewSnippetsMessages(s: Snippet): string[] {
 }
 
 export function separatorMessage(): string {
-  return "------------------------------";
+  return "​";
 }
 
 /** Safe filename piece from title (underscores, alnum) — legacy helper. */

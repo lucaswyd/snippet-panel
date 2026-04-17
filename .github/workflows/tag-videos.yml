@@ -65,6 +65,11 @@ jobs:
               echo "Skip: no untagged_media"
               continue
             fi
+            PRIVATE_BODY=$(jq -n --arg q "$QUEUE_ID" --arg p "$FILE" '{queueId: $q, snippetPath: $p}')
+            curl -fsS -X POST "${VERCEL_APP_URL}/api/internal-dispatch-private-queue" \
+              -H "Content-Type: application/json" \
+              -H "x-internal-secret: ${CALLBACK_SECRET}" \
+              -d "$PRIVATE_BODY"
             TAG_URLS='[]'
             i=0
             while IFS= read -r URL; do

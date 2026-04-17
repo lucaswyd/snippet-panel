@@ -11,6 +11,10 @@ function badgeClass(status: QueueItem["status"]): string {
       return "badge badge-tagging";
     case "posting":
       return "badge badge-posting";
+    case "posting_private":
+      return "badge badge-posting";
+    case "posting_public":
+      return "badge badge-posting";
     case "done":
       return "badge badge-done";
     case "error":
@@ -28,6 +32,10 @@ function label(status: QueueItem["status"]): string {
       return "Tagging videos…";
     case "posting":
       return "Posting to Discord…";
+    case "posting_private":
+      return "Posting private (untagged)…";
+    case "posting_public":
+      return "Posting public (tagged)…";
     case "done":
       return "Done ✓";
     case "error":

@@ -1,98 +1,293 @@
 import {
   deleteMessagesInChannel,
+  deleteWebhookMessage,
   postSnippetNewWebhook,
-  postSnippetSwapFlow,
-  setRoleChannelOverwrite,
+  postSnippetToWebhookUrlWithIds,
   sleep,
-  VIEW_ROLE_ID,
 } from "@/lib/discord";
 import {
-  getChannelsState,
+  createOrUpdateSnippetFile,
   getOctokit,
   getSnippetAtPath,
-  putChannelsState,
+  listSnippetPaths,
 } from "@/lib/github";
-import { loadSortedSnippetsFromGitHub } from "@/lib/processor";
-import { sortSnippets } from "@/lib/snippets";
+import {
+  buildPrivateChannelMessages,
+  buildSwapChannelMessages,
+  type Snippet,
+} from "@/lib/snippets";
+
+type ChannelTarget = "public" | "private";
+type Mode = "full_public" | "full_private" | "queue_public" | "queue_private";
 
 export type RunFullArchivePostOptions =
-  | { mode: "repost" }
+  | { mode: "full_public" }
+  | { mode: "full_private" }
   | {
-      mode: "queue";
+      mode: "queue_public";
       snippetPath: string;
       isNew: boolean;
       taggedMediaUrls?: string[];
+    }
+  | {
+      mode: "queue_private";
+      snippetPath: string;
     };
 
-/**
- * Post every tagged snippet to the blank channel, clear the snippet channel,
- * swap visibility, and commit channel IDs to GitHub — same work as the legacy
- * chunked repost and as do-post-job.
- */
-export async function runFullArchivePost(
-  opts: RunFullArchivePostOptions
-): Promise<void> {
-  if (opts.mode === "queue") {
-    await sleep(2000);
+type SnippetRecord = { path: string; snippet: Snippet };
+type MessageIdStore = {
+  public?: { messageIds: string[]; separatorId?: string };
+  private?: { messageIds: string[]; separatorId?: string };
+};
+
+const FULL_SNIPPET_DELAY_MS = Number(
+  process.env.FULL_ARCHIVE_SNIPPET_DELAY_MS ?? 2000
+);
+const QUEUE_SNIPPET_DELAY_MS = Number(
+  process.env.QUEUE_SNIPPET_DELAY_MS ?? 1200
+);
+
+function webhookFor(target: ChannelTarget): string {
+  if (target === "public") {
+    return (
+      process.env.WEBHOOK_PUBLIC_SNIPPETS ?? process.env.WEBHOOK_SNIPPETS ?? ""
+    );
+  }
+  return process.env.WEBHOOK_PRIVATE_SNIPPETS ?? process.env.WEBHOOK_BLANK ?? "";
+}
+
+function channelIdForFullDelete(target: ChannelTarget): string {
+  if (target === "public") {
+    return process.env.PUBLIC_CHANNEL_ID ?? process.env.CHANNEL_A_ID ?? "";
+  }
+  return process.env.PRIVATE_CHANNEL_ID ?? process.env.CHANNEL_B_ID ?? "";
+}
+
+function mediaCountFor(target: ChannelTarget, s: Snippet): number {
+  return target === "public"
+    ? s.tagged_media?.length ?? 0
+    : s.untagged_media?.length ?? 0;
+}
+
+function messagesFor(target: ChannelTarget, s: Snippet): string[] {
+  return target === "public"
+    ? buildSwapChannelMessages(s)
+    : buildPrivateChannelMessages(s);
+}
+
+function readMessageIds(s: Snippet): MessageIdStore {
+  const cur = s.messageId;
+  if (!cur) return {};
+  if (typeof cur === "object" && cur !== null && !Array.isArray(cur)) {
+    const o = cur as Record<string, unknown>;
+    const parseSide = (
+      v: unknown
+    ): { messageIds: string[]; separatorId?: string } | undefined => {
+      if (Array.isArray(v)) {
+        return {
+          messageIds: v.filter((x): x is string => typeof x === "string"),
+        };
+      }
+      if (typeof v === "object" && v !== null) {
+        const vv = v as Record<string, unknown>;
+        const messageIds = Array.isArray(vv.messageIds)
+          ? vv.messageIds.filter((x): x is string => typeof x === "string")
+          : [];
+        const separatorId =
+          typeof vv.separatorId === "string" ? vv.separatorId : undefined;
+        if (messageIds.length === 0 && !separatorId) return undefined;
+        return { messageIds, separatorId };
+      }
+      return undefined;
+    };
+    return { public: parseSide(o.public), private: parseSide(o.private) };
+  }
+  if (Array.isArray(cur)) {
+    return {
+      public: { messageIds: cur.filter((x): x is string => typeof x === "string") },
+    };
+  }
+  return {};
+}
+
+function writeMessageIds(
+  s: Snippet,
+  target: ChannelTarget,
+  ids: { messageIds: string[]; separatorId: string }
+): Snippet {
+  const m = readMessageIds(s);
+  const next: MessageIdStore = { ...m, [target]: ids };
+  return { ...s, messageId: next };
+}
+
+async function loadSortedRecords(): Promise<SnippetRecord[]> {
+  const octokit = getOctokit();
+  const paths = await listSnippetPaths(octokit);
+  const out: SnippetRecord[] = [];
+  for (const p of paths) {
+    try {
+      const s = await getSnippetAtPath(octokit, p);
+      out.push({ path: p, snippet: s });
+    } catch {
+      /* skip bad file */
+    }
+  }
+  out.sort((a, b) => {
+    if (a.snippet.date !== b.snippet.date) {
+      return a.snippet.date.localeCompare(b.snippet.date);
+    }
+    return a.snippet.title.localeCompare(b.snippet.title);
+  });
+  return out;
+}
+
+async function postAndPersistIds(
+  rec: SnippetRecord,
+  target: ChannelTarget,
+  commitMsg: string
+): Promise<{ separatorId: string }> {
+  const octokit = getOctokit();
+  const webhook = webhookFor(target);
+  const ids = await postSnippetToWebhookUrlWithIds(
+    webhook,
+    messagesFor(target, rec.snippet)
+  );
+  const updated = writeMessageIds(rec.snippet, target, ids);
+  rec.snippet = updated;
+  await createOrUpdateSnippetFile(octokit, rec.path, updated, commitMsg);
+  return { separatorId: ids.separatorId };
+}
+
+async function deleteSnippetMessages(rec: SnippetRecord, target: ChannelTarget) {
+  const webhook = webhookFor(target);
+  const side = readMessageIds(rec.snippet)[target];
+  const ids = side?.messageIds ?? [];
+  for (const id of ids) {
+    await deleteWebhookMessage(webhook, id);
+  }
+  if (side?.separatorId) {
+    await deleteWebhookMessage(webhook, side.separatorId);
+  }
+}
+
+async function runFullForTarget(target: ChannelTarget): Promise<void> {
+  const records = await loadSortedRecords();
+  const list = records.filter((r) => mediaCountFor(target, r.snippet) > 0);
+  const channelId = channelIdForFullDelete(target);
+  if (!channelId) {
+    throw new Error(
+      `Missing ${target === "public" ? "PUBLIC_CHANNEL_ID/CHANNEL_A_ID" : "PRIVATE_CHANNEL_ID/CHANNEL_B_ID"}`
+    );
   }
 
-  const octokit = getOctokit();
-  let sorted = await loadSortedSnippetsFromGitHub();
+  console.log(`[full-${target}] deleting channel history first…`);
+  await deleteMessagesInChannel(channelId);
 
-  if (opts.mode === "queue") {
-    if (opts.taggedMediaUrls?.length) {
-      const fresh = await getSnippetAtPath(octokit, opts.snippetPath);
-      if (!fresh.tagged_media?.length) {
-        const withTags = { ...fresh, tagged_media: opts.taggedMediaUrls };
-        sorted = sortSnippets([
-          ...sorted.filter(
-            (s) => !(s.title === fresh.title && s.date === fresh.date)
-          ),
-          withTags,
-        ]);
+  for (let i = 0; i < list.length; i++) {
+    const rec = list[i];
+    console.log(`[full-${target}] ${i + 1}/${list.length} ${rec.snippet.title}`);
+    const { separatorId } = await postAndPersistIds(
+      rec,
+      target,
+      `messageId ${target}: ${rec.snippet.title} (${new Date().toISOString()})`
+    );
+    // Ensure the channel ends on a snippet, not a separator.
+    if (i === list.length - 1) {
+      await deleteWebhookMessage(webhookFor(target), separatorId);
+    }
+    await sleep(FULL_SNIPPET_DELAY_MS);
+  }
+}
+
+async function runQueueForTarget(
+  target: ChannelTarget,
+  snippetPath: string,
+  taggedMediaUrls?: string[],
+  isNew?: boolean
+): Promise<void> {
+  const records = await loadSortedRecords();
+  const targetRec = records.find((r) => r.path === snippetPath);
+  if (!targetRec) throw new Error(`Snippet path not found: ${snippetPath}`);
+
+  if (target === "public" && taggedMediaUrls?.length && !targetRec.snippet.tagged_media?.length) {
+    targetRec.snippet = { ...targetRec.snippet, tagged_media: taggedMediaUrls };
+  }
+
+  const ordered = records.filter((r) => mediaCountFor(target, r.snippet) > 0);
+  const insertAt = ordered.findIndex((r) => r.path === snippetPath);
+  if (insertAt < 0) {
+    throw new Error(
+      `Target snippet has no ${target === "public" ? "tagged" : "untagged"} media`
+    );
+  }
+
+  const isNewest = insertAt === ordered.length - 1;
+  if (isNewest) {
+    console.log(`[queue-${target}] newest item, append only`);
+    const { separatorId } = await postAndPersistIds(
+      targetRec,
+      target,
+      `messageId ${target}: append ${targetRec.snippet.title}`
+    );
+    await deleteWebhookMessage(webhookFor(target), separatorId);
+  } else {
+    const tail = ordered.slice(insertAt).filter((r) => r.path !== snippetPath);
+    console.log(
+      `[queue-${target}] insert at ${insertAt + 1}/${ordered.length}; rebuilding tail size ${tail.length}`
+    );
+    for (const r of tail) {
+      await deleteSnippetMessages(r, target);
+    }
+    const inserted = await postAndPersistIds(
+      targetRec,
+      target,
+      `messageId ${target}: insert ${targetRec.snippet.title}`
+    );
+    await sleep(QUEUE_SNIPPET_DELAY_MS);
+    for (const r of tail) {
+      const replay = await postAndPersistIds(
+        r,
+        target,
+        `messageId ${target}: replay ${r.snippet.title}`
+      );
+      await sleep(QUEUE_SNIPPET_DELAY_MS);
+      // If this is the last replayed snippet, delete the trailing separator.
+      if (r.path === tail[tail.length - 1]?.path) {
+        await deleteWebhookMessage(webhookFor(target), replay.separatorId);
       }
+    }
+    // If there was no tail (shouldn't happen in this branch), still delete separator.
+    if (tail.length === 0) {
+      await deleteWebhookMessage(webhookFor(target), inserted.separatorId);
     }
   }
 
-  const state = await getChannelsState(octokit);
-
-  const toPost = sorted.filter((s) => (s.tagged_media?.length ?? 0) > 0);
-  const n = toPost.length;
-  console.log(`[full-archive-post] posting ${n} snippet(s) to blank channel ${state.blankChannelId}`);
-
-  for (let i = 0; i < toPost.length; i++) {
-    const s = toPost[i];
-    console.log(
-      `[full-archive-post] ${i + 1}/${n} — ${s.title} (${(s.tagged_media?.length ?? 0)} links)`
-    );
-    await postSnippetSwapFlow(state.blankChannelId, s);
-  }
-
-  console.log("[full-archive-post] deleting messages in snippet channel…");
-
-  await deleteMessagesInChannel(state.snippetChannelId);
-  console.log("[full-archive-post] updating channel permissions…");
-  await setRoleChannelOverwrite(state.blankChannelId, VIEW_ROLE_ID, true);
-  await setRoleChannelOverwrite(state.snippetChannelId, VIEW_ROLE_ID, false);
-  console.log("[full-archive-post] committing channels.json…");
-  await putChannelsState(
-    octokit,
-    {
-      snippetChannelId: state.blankChannelId,
-      blankChannelId: state.snippetChannelId,
-    },
-    opts.mode === "repost"
-      ? "Swap channels after full post (repost)"
-      : "Swap channels after tagged snippet pipeline"
-  );
-
-  if (opts.mode === "queue" && opts.isNew) {
-    const fresh = await getSnippetAtPath(octokit, opts.snippetPath);
+  if (target === "public" && isNew) {
+    const fresh = records.find((r) => r.path === snippetPath)?.snippet ?? targetRec.snippet;
     if (fresh.tagged_media?.length) {
-      console.log("[full-archive-post] new-snippet webhook…");
       await postSnippetNewWebhook(fresh);
     }
   }
+}
 
-  console.log("[full-archive-post] done");
+export async function runFullArchivePost(
+  opts: RunFullArchivePostOptions
+): Promise<void> {
+  switch (opts.mode) {
+    case "full_public":
+      return runFullForTarget("public");
+    case "full_private":
+      return runFullForTarget("private");
+    case "queue_private":
+      return runQueueForTarget("private", opts.snippetPath);
+    case "queue_public":
+      return runQueueForTarget(
+        "public",
+        opts.snippetPath,
+        opts.taggedMediaUrls,
+        opts.isNew
+      );
+    default:
+      return;
+  }
 }

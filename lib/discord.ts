@@ -51,7 +51,7 @@ export function sleep(ms: number): Promise<void> {
 async function executeWebhookPost(
   fullUrl: string,
   jsonBody: Record<string, unknown>
-): Promise<void> {
+): Promise<string> {
   for (let attempt = 0; attempt < WEBHOOK_429_MAX_ATTEMPTS; attempt++) {
     let res: Response;
     try {
@@ -101,7 +101,9 @@ async function executeWebhookPost(
       const t = await res.text();
       throw new Error(`Webhook post failed: ${res.status} ${t}`);
     }
-    return;
+    const j = (await res.json().catch(() => ({}))) as { id?: string };
+    if (!j.id) throw new Error("Webhook post succeeded but message id missing");
+    return j.id;
   }
   throw new Error(
     `Webhook post: exceeded ${WEBHOOK_429_MAX_ATTEMPTS} rate-limit retries`
@@ -165,6 +167,18 @@ async function postToWebhook(webhookUrl: string, content: string): Promise<void>
   await sleep(WEBHOOK_POST_GAP_MS);
 }
 
+async function postToWebhookWithMessageId(
+  webhookUrl: string,
+  content: string
+): Promise<string> {
+  const url = webhookUrl.includes("?")
+    ? `${webhookUrl}&wait=true`
+    : `${webhookUrl}?wait=true`;
+  const id = await executeWebhookPost(url, { content });
+  await sleep(WEBHOOK_POST_GAP_MS);
+  return id;
+}
+
 /** Post snippet sequence + separator via webhook (swap channels — not bot). */
 export async function postSnippetToWebhookUrl(
   webhookUrl: string,
@@ -172,13 +186,34 @@ export async function postSnippetToWebhookUrl(
 ): Promise<void> {
   if (!webhookUrl) {
     throw new Error(
-      "Missing webhook for this channel. Set WEBHOOK_SNIPPETS (channel A) and WEBHOOK_BLANK (channel B), plus CHANNEL_A_ID / CHANNEL_B_ID if non-default."
+      "Missing webhook for this channel. Set WEBHOOK_PUBLIC_SNIPPETS / WEBHOOK_PRIVATE_SNIPPETS (or legacy WEBHOOK_SNIPPETS / WEBHOOK_BLANK)."
     );
   }
   for (const m of messages) {
     await postToWebhook(webhookUrl, m);
   }
   await postToWebhook(webhookUrl, separatorMessage());
+}
+
+/** Same as postSnippetToWebhookUrl, but returns all posted message IDs for replay/delete bookkeeping. */
+export async function postSnippetToWebhookUrlWithIds(
+  webhookUrl: string,
+  messages: string[]
+): Promise<{ messageIds: string[]; separatorId: string }> {
+  if (!webhookUrl) {
+    throw new Error(
+      "Missing webhook for this channel. Set WEBHOOK_PUBLIC_SNIPPETS / WEBHOOK_PRIVATE_SNIPPETS (or legacy WEBHOOK_SNIPPETS / WEBHOOK_BLANK)."
+    );
+  }
+  const out: string[] = [];
+  for (const m of messages) {
+    out.push(await postToWebhookWithMessageId(webhookUrl, m));
+  }
+  const separatorId = await postToWebhookWithMessageId(
+    webhookUrl,
+    separatorMessage()
+  );
+  return { messageIds: out, separatorId };
 }
 
 export async function postSnippetSwapFlow(
@@ -188,6 +223,33 @@ export async function postSnippetSwapFlow(
   const wh = webhookUrlForChannelId(blankChannelId);
   const msgs = buildSwapChannelMessages(s);
   await postSnippetToWebhookUrl(wh, msgs);
+}
+
+function parseWebhookParts(webhookUrl: string): { id: string; token: string } {
+  const u = new URL(webhookUrl);
+  const parts = u.pathname.split("/").filter(Boolean);
+  const i = parts.findIndex((p) => p === "webhooks");
+  if (i < 0 || !parts[i + 1] || !parts[i + 2]) {
+    throw new Error("Invalid webhook URL");
+  }
+  return { id: parts[i + 1], token: parts[i + 2] };
+}
+
+export async function deleteWebhookMessage(
+  webhookUrl: string,
+  messageId: string
+): Promise<void> {
+  const { id, token } = parseWebhookParts(webhookUrl);
+  const u = `${API}/webhooks/${id}/${token}/messages/${messageId}`;
+  const res = await fetch(u, {
+    method: "DELETE",
+    signal: abortWithTimeout(BOT_HTTP_TIMEOUT_MS),
+  });
+  if (!res.ok && res.status !== 404) {
+    const t = await res.text();
+    throw new Error(`Webhook delete failed: ${res.status} ${t}`);
+  }
+  await sleep(BOT_REST_GAP_MS);
 }
 
 /** Bot: only for operations webhooks cannot do (delete, permissions). */

@@ -2,7 +2,11 @@ name: Full archive post
 
 on:
   repository_dispatch:
-    types: [full-post-repost, full-post-queue]
+    types:
+      - full-post-repost-public
+      - full-post-repost-private
+      - full-post-queue-public
+      - full-post-queue-private
 
 defaults:
   run:
@@ -43,10 +47,14 @@ jobs:
           WEBHOOK_NEW_SNIPPETS: ${{ secrets.WEBHOOK_NEW_SNIPPETS }}
           CHANNEL_A_ID: ${{ secrets.CHANNEL_A_ID }}
           CHANNEL_B_ID: ${{ secrets.CHANNEL_B_ID }}
+          PUBLIC_CHANNEL_ID: ${{ secrets.PUBLIC_CHANNEL_ID }}
+          PRIVATE_CHANNEL_ID: ${{ secrets.PRIVATE_CHANNEL_ID }}
+          FULL_ARCHIVE_SNIPPET_DELAY_MS: "3000"
+          QUEUE_SNIPPET_DELAY_MS: "1500"
         run: npx tsx scripts/full-archive-post.ts
 
       - name: Queue success → Vercel
-        if: success() && github.event.action == 'full-post-queue'
+        if: success() && github.event.action == 'full-post-queue-public'
         env:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
@@ -61,7 +69,7 @@ jobs:
             -d "{\"queueId\":\"$Q\",\"ok\":true}"
 
       - name: Queue failure → Vercel
-        if: failure() && github.event.action == 'full-post-queue'
+        if: failure() && (github.event.action == 'full-post-queue-public' || github.event.action == 'full-post-queue-private')
         env:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}

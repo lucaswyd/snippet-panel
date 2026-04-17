@@ -39,10 +39,10 @@ export default async function handler(
     return res.status(404).json({ error: "Queue item not found" });
   }
 
-  updateQueueItem(queueId, { status: "posting" });
+  updateQueueItem(queueId, { status: "posting_public" });
 
   try {
-    await triggerRepositoryDispatch("full-post-queue", {
+    await triggerRepositoryDispatch("full-post-queue-public", {
       queueId,
       snippetPath: item.snippetPath,
       isNew: item.isNew,

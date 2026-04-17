@@ -1,9 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { triggerRepositoryDispatch } from "@/lib/trigger-repository-dispatch";
 
-/**
- * Starts a GitHub Actions workflow that runs the full public archive post.
- */
+/** Starts GitHub Actions full private (untagged) archive post. */
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -15,7 +13,9 @@ export default async function handler(
 
   try {
     const dispatchedAt = new Date().toISOString();
-    await triggerRepositoryDispatch("full-post-repost-public", { dispatchedAt });
+    await triggerRepositoryDispatch("full-post-repost-private", {
+      dispatchedAt,
+    });
     return res.status(200).json({ ok: true, dispatchedAt });
   } catch (e) {
     const msg =

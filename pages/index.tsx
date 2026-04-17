@@ -8,6 +8,9 @@ import { RepostProvider, useRepost } from "@/components/RepostContext";
 function HomeInner() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { openRepostFromMenu } = useRepost();
+  const triggerPrivateFullArchive = async () => {
+    await fetch("/api/trigger-full-post-private", { method: "POST" });
+  };
 
   return (
     <>
@@ -65,7 +68,16 @@ function HomeInner() {
                       openRepostFromMenu();
                     }}
                   >
-                    Repost snippets
+                    Post full public archive
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      void triggerPrivateFullArchive();
+                    }}
+                  >
+                    Post full private archive
                   </button>
                 </div>
               </>
