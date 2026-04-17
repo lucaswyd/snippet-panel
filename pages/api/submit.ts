@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { v4 as uuidv4 } from "uuid";
 import type { QueueItem, Snippet } from "@/lib/snippets";
 import { snippetFilename } from "@/lib/snippets";
-import { createOrUpdateSnippetFile, getOctokit } from "@/lib/github";
+import { createOrUpdateSnippetFile, getOctokit, listSnippetPaths } from "@/lib/github";
 import { pushQueueItem, updateQueueItem } from "@/lib/queue";
 
 type SubmitBody = {
@@ -42,8 +42,24 @@ export default async function handler(
 
   const id = uuidv4();
   const createdAt = new Date().toISOString();
-  const fileBase = snippetFilename(body.title);
-  const snippetPath = `snippets/${fileBase}`;
+  const octokit = getOctokit();
+  const existingPaths = new Set(await listSnippetPaths(octokit));
+
+  const base = snippetFilename(body.title);
+  const baseNoExt = base.endsWith(".json") ? base.slice(0, -5) : base;
+  let snippetPath = `snippets/${base}`;
+  if (existingPaths.has(snippetPath)) {
+    let n = 2;
+    for (;;) {
+      const candidate = `snippets/${baseNoExt} (Snippet ${n}).json`;
+      if (!existingPaths.has(candidate)) {
+        snippetPath = candidate;
+        break;
+      }
+      n++;
+      if (n > 999) throw new Error("Too many duplicate snippet titles");
+    }
+  }
 
   const snippet: Snippet = {
     createdAt,
@@ -79,7 +95,6 @@ export default async function handler(
   }
 
   try {
-    const octokit = getOctokit();
     await createOrUpdateSnippetFile(
       octokit,
       snippetPath,

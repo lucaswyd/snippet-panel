@@ -36,9 +36,9 @@ export default async function handler(
   }
 
   const item = readQueue().find((q) => q.id === queueId);
-  if (!item) return res.status(404).json({ error: "Queue item not found" });
-
-  updateQueueItem(queueId, { status: "posting_private" });
+  if (item) {
+    updateQueueItem(queueId, { status: "posting_private" });
+  }
   try {
     await triggerRepositoryDispatch("full-post-queue-private", {
       queueId,
@@ -47,7 +47,7 @@ export default async function handler(
     return res.status(200).json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to dispatch private queue post";
-    updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    if (item) updateQueueItem(queueId, { status: "error", errorMessage: msg });
     return res.status(500).json({ error: msg });
   }
 }

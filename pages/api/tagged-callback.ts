@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { updateQueueItem, readQueue } from "@/lib/queue";
 import { triggerRepositoryDispatch } from "@/lib/trigger-repository-dispatch";
+import { findSnippetPathByQueueId, getOctokit } from "@/lib/github";
 
 type Body = {
   queueId?: string;
@@ -33,25 +34,28 @@ export default async function handler(
     return res.status(400).json({ error: "queueId required" });
   }
 
-  const items = readQueue();
-  const item = items.find((q) => q.id === queueId);
-  if (!item) {
-    return res.status(404).json({ error: "Queue item not found" });
-  }
+  const item = readQueue().find((q) => q.id === queueId);
+  const snippetPath =
+    item?.snippetPath ??
+    (await findSnippetPathByQueueId(getOctokit(), queueId));
+  const isNew = item?.isNew ?? false;
 
-  updateQueueItem(queueId, { status: "posting_public" });
+  // The /tmp queue can disappear on Vercel cold starts — still dispatch posting.
+  if (item) {
+    updateQueueItem(queueId, { status: "posting_public" });
+  }
 
   try {
     await triggerRepositoryDispatch("full-post-queue-public", {
       queueId,
-      snippetPath: item.snippetPath,
-      isNew: item.isNew,
+      snippetPath,
+      isNew,
       taggedMediaUrls: body.taggedMediaUrls ?? [],
     });
   } catch (e) {
     const msg =
       e instanceof Error ? e.message : "Failed to start full-post workflow";
-    updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    if (item) updateQueueItem(queueId, { status: "error", errorMessage: msg });
     return res.status(500).json({ error: msg });
   }
 
