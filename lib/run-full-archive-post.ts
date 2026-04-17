@@ -56,6 +56,13 @@ function webhookFor(target: ChannelTarget): string {
   return process.env.WEBHOOK_PRIVATE_SNIPPETS ?? process.env.WEBHOOK_BLANK ?? "";
 }
 
+function separatorWebhookFor(target: ChannelTarget): string {
+  if (target === "public") {
+    return process.env.WEBHOOK_PUBLIC_SEPARATOR ?? webhookFor(target);
+  }
+  return process.env.WEBHOOK_PRIVATE_SEPARATOR ?? webhookFor(target);
+}
+
 function channelIdForFullDelete(target: ChannelTarget): string {
   if (target === "public") {
     return process.env.PUBLIC_CHANNEL_ID ?? process.env.CHANNEL_A_ID ?? "";
@@ -160,13 +167,14 @@ async function postAndPersistIds(
 
 async function deleteSnippetMessages(rec: SnippetRecord, target: ChannelTarget) {
   const webhook = webhookFor(target);
+  const sepWebhook = separatorWebhookFor(target);
   const side = readMessageIds(rec.snippet)[target];
   const ids = side?.messageIds ?? [];
   for (const id of ids) {
     await deleteWebhookMessage(webhook, id);
   }
   if (side?.separatorId) {
-    await deleteWebhookMessage(webhook, side.separatorId);
+    await deleteWebhookMessage(sepWebhook, side.separatorId);
   }
 }
 
@@ -193,7 +201,7 @@ async function runFullForTarget(target: ChannelTarget): Promise<void> {
     );
     // Ensure the channel ends on a snippet, not a separator.
     if (i === list.length - 1) {
-      await deleteWebhookMessage(webhookFor(target), separatorId);
+      await deleteWebhookMessage(separatorWebhookFor(target), separatorId);
     }
     await sleep(FULL_SNIPPET_DELAY_MS);
   }
@@ -229,7 +237,7 @@ async function runQueueForTarget(
       target,
       `messageId ${target}: append ${targetRec.snippet.title}`
     );
-    await deleteWebhookMessage(webhookFor(target), separatorId);
+    await deleteWebhookMessage(separatorWebhookFor(target), separatorId);
   } else {
     const tail = ordered.slice(insertAt).filter((r) => r.path !== snippetPath);
     console.log(
@@ -253,12 +261,12 @@ async function runQueueForTarget(
       await sleep(QUEUE_SNIPPET_DELAY_MS);
       // If this is the last replayed snippet, delete the trailing separator.
       if (r.path === tail[tail.length - 1]?.path) {
-        await deleteWebhookMessage(webhookFor(target), replay.separatorId);
+        await deleteWebhookMessage(separatorWebhookFor(target), replay.separatorId);
       }
     }
     // If there was no tail (shouldn't happen in this branch), still delete separator.
     if (tail.length === 0) {
-      await deleteWebhookMessage(webhookFor(target), inserted.separatorId);
+      await deleteWebhookMessage(separatorWebhookFor(target), inserted.separatorId);
     }
   }
 

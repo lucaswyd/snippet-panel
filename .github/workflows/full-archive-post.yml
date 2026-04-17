@@ -44,6 +44,8 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOK_SNIPPETS: ${{ secrets.WEBHOOK_SNIPPETS }}
           WEBHOOK_BLANK: ${{ secrets.WEBHOOK_BLANK }}
+          WEBHOOK_PUBLIC_SEPARATOR: ${{ secrets.WEBHOOK_PUBLIC_SEPARATOR }}
+          WEBHOOK_PRIVATE_SEPARATOR: ${{ secrets.WEBHOOK_PRIVATE_SEPARATOR }}
           WEBHOOK_NEW_SNIPPETS: ${{ secrets.WEBHOOK_NEW_SNIPPETS }}
           CHANNEL_A_ID: ${{ secrets.CHANNEL_A_ID }}
           CHANNEL_B_ID: ${{ secrets.CHANNEL_B_ID }}

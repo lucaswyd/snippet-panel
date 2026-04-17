@@ -197,23 +197,32 @@ export async function postSnippetToWebhookUrl(
 
 /** Same as postSnippetToWebhookUrl, but returns all posted message IDs for replay/delete bookkeeping. */
 export async function postSnippetToWebhookUrlWithIds(
-  webhookUrl: string,
+  snippetWebhookUrl: string,
   messages: string[]
 ): Promise<{ messageIds: string[]; separatorId: string }> {
-  if (!webhookUrl) {
+  if (!snippetWebhookUrl) {
     throw new Error(
       "Missing webhook for this channel. Set WEBHOOK_PUBLIC_SNIPPETS / WEBHOOK_PRIVATE_SNIPPETS (or legacy WEBHOOK_SNIPPETS / WEBHOOK_BLANK)."
     );
   }
   const out: string[] = [];
   for (const m of messages) {
-    out.push(await postToWebhookWithMessageId(webhookUrl, m));
+    out.push(await postToWebhookWithMessageId(snippetWebhookUrl, m));
   }
-  const separatorId = await postToWebhookWithMessageId(
-    webhookUrl,
-    separatorMessage()
-  );
+  const separatorUrl = separatorWebhookUrlFor(snippetWebhookUrl);
+  const separatorId = await postToWebhookWithMessageId(separatorUrl, separatorMessage());
   return { messageIds: out, separatorId };
+}
+
+function separatorWebhookUrlFor(snippetWebhookUrl: string): string {
+  // Prefer explicit separator webhooks; fall back to posting separators on the snippet webhook.
+  if (snippetWebhookUrl === (process.env.WEBHOOK_PUBLIC_SNIPPETS ?? process.env.WEBHOOK_SNIPPETS ?? "")) {
+    return process.env.WEBHOOK_PUBLIC_SEPARATOR ?? snippetWebhookUrl;
+  }
+  if (snippetWebhookUrl === (process.env.WEBHOOK_PRIVATE_SNIPPETS ?? process.env.WEBHOOK_BLANK ?? "")) {
+    return process.env.WEBHOOK_PRIVATE_SEPARATOR ?? snippetWebhookUrl;
+  }
+  return snippetWebhookUrl;
 }
 
 export async function postSnippetSwapFlow(
