@@ -5,6 +5,7 @@
     "pages/api/trigger-full-post-repost.ts": { "maxDuration": 60 },
     "pages/api/trigger-full-post-private.ts": { "maxDuration": 60 },
     "pages/api/internal-dispatch-private-queue.ts": { "maxDuration": 30 },
+    "pages/api/internal-queue-status.ts": { "maxDuration": 15 },
     "pages/api/full-post-workflow-status.ts": { "maxDuration": 30 },
     "pages/api/internal-post-complete.ts": { "maxDuration": 15 },
     "pages/api/repost-chunk.ts": { "maxDuration": 60 },

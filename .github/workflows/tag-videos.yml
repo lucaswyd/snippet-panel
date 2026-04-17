@@ -22,6 +22,15 @@ jobs:
           fetch-depth: 2
           token: ${{ secrets.GH_PAT }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install Node deps
+        run: npm ci
+
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg curl jq
 
@@ -34,6 +43,21 @@ jobs:
         env:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          # GitHub API access for posting script commits (messageId).
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+          # Discord env for posting (must be mirrored from Vercel).
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          WEBHOOK_PUBLIC_SNIPPETS: ${{ secrets.WEBHOOK_PUBLIC_SNIPPETS }}
+          WEBHOOK_PRIVATE_SNIPPETS: ${{ secrets.WEBHOOK_PRIVATE_SNIPPETS }}
+          WEBHOOK_PUBLIC_SEPARATOR: ${{ secrets.WEBHOOK_PUBLIC_SEPARATOR }}
+          WEBHOOK_PRIVATE_SEPARATOR: ${{ secrets.WEBHOOK_PRIVATE_SEPARATOR }}
+          WEBHOOK_NEW_SNIPPETS: ${{ secrets.WEBHOOK_NEW_SNIPPETS }}
+          PUBLIC_CHANNEL_ID: ${{ secrets.PUBLIC_CHANNEL_ID }}
+          PRIVATE_CHANNEL_ID: ${{ secrets.PRIVATE_CHANNEL_ID }}
+          # Conservative pacing
+          QUEUE_SNIPPET_DELAY_MS: "2000"
         run: |
           set -euo pipefail
           FONT="/tmp/fonts/SFPRODISPLAYMEDIUM.OTF"
@@ -65,11 +89,28 @@ jobs:
               echo "Skip: no untagged_media"
               continue
             fi
-            PRIVATE_BODY=$(jq -n --arg q "$QUEUE_ID" --arg p "$FILE" '{queueId: $q, snippetPath: $p}')
-            curl -fsS -X POST "${VERCEL_APP_URL}/api/internal-dispatch-private-queue" \
+            BASE="${VERCEL_APP_URL%/}"
+            fail_job() {
+              local msg="$1"
+              echo "ERROR: $msg"
+              curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+                -H "Content-Type: application/json" \
+                -H "x-internal-secret: ${CALLBACK_SECRET}" \
+                -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":false,\"errorMessage\":\"$msg\"}" || true
+              exit 1
+            }
+            # 1) Post untagged to private channel (insert/delete/replay as needed)
+            curl -fsS -X POST "${BASE}/api/internal-queue-status" \
               -H "Content-Type: application/json" \
               -H "x-internal-secret: ${CALLBACK_SECRET}" \
-              -d "$PRIVATE_BODY"
+              -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_private\"}"
+            export FULL_POST_ACTION="full-post-queue-private"
+            export FULL_POST_CLIENT_PAYLOAD
+            FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" '{snippetPath: $p}')
+            npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
+
+            # The posting script commits messageId via GitHub API; sync it before we edit this file.
+            git pull --rebase origin main || true
             TAG_URLS='[]'
             i=0
             while IFS= read -r URL; do
@@ -98,9 +139,19 @@ jobs:
             git add "$FILE"
             git commit -m "Tag media for ${FILE}"
             git push origin HEAD
-            CALLBACK_BODY=$(jq -n --arg q "$QUEUE_ID" --argjson t "$TAG_URLS" '{queueId: $q, taggedMediaUrls: $t}')
-            curl -fsS -X POST "${VERCEL_APP_URL}/api/tagged-callback" \
+
+            # 2) Post tagged to public channel (insert/delete/replay as needed)
+            curl -fsS -X POST "${BASE}/api/internal-queue-status" \
               -H "Content-Type: application/json" \
-              -H "x-callback-secret: ${CALLBACK_SECRET}" \
-              -d "$CALLBACK_BODY"
+              -H "x-internal-secret: ${CALLBACK_SECRET}" \
+              -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
+            export FULL_POST_ACTION="full-post-queue-public"
+            FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" '{snippetPath: $p, taggedMediaUrls: $t, isNew: false}')
+            npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
+
+            # Mark queue done
+            curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+              -H "Content-Type: application/json" \
+              -H "x-internal-secret: ${CALLBACK_SECRET}" \
+              -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
           done <<< "$CHANGED"
