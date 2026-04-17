@@ -9,6 +9,12 @@
   "ping": false,
   "webhookSelected": "snippet-archive",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1494736085941751908"
+      ],
+      "separatorId": "1494736087648833737"
+    },
     "private": {
       "messageIds": [
         "1494730977816219690"
