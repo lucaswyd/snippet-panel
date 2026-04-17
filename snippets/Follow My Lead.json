@@ -13,6 +13,12 @@
     "https://fast-file.com/8c3bee05/download"
   ],
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1494771761470898187"
+      ],
+      "separatorId": "1494771763043893350"
+    },
     "private": {
       "messageIds": [
         "1494771609926500382"
