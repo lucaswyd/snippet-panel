@@ -14,6 +14,12 @@
   ],
   "feat": "1504 Mutebaby",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1495236828020871230"
+      ],
+      "separatorId": "1495236829832675428"
+    },
     "private": {
       "messageIds": [
         "1495236617701691523"
