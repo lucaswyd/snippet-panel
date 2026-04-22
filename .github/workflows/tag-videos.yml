@@ -154,7 +154,7 @@ jobs:
                 -c:a copy \
                 "$OUT"
 
-              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT}")
+              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
               TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
 
               if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
