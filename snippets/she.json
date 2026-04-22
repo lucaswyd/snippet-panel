@@ -11,5 +11,13 @@
   ],
   "tagged_media": [],
   "_queueId": "28e60583-8640-45e0-b86e-55d3f624b860",
-  "feat": "kno"
+  "feat": "kno",
+  "messageId": {
+    "private": {
+      "messageIds": [
+        "1496573121409450044"
+      ],
+      "separatorId": "1496573122869203127"
+    }
+  }
 }
