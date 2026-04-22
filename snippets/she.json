@@ -14,6 +14,12 @@
   ],
   "feat": "kno",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1496573477245816892"
+      ],
+      "separatorId": "1496573485214859384"
+    },
     "private": {
       "messageIds": [
         "1496573121409450044"
