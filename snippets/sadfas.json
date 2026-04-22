@@ -14,6 +14,12 @@
   ],
   "feat": "fadsf",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1496578576781283429"
+      ],
+      "separatorId": "1496578578190438564"
+    },
     "private": {
       "messageIds": [
         "1496578248660750346"
