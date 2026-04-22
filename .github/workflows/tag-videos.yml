@@ -44,11 +44,9 @@ jobs:
         env:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
-          # GitHub API access for posting script commits (messageId).
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-          # Discord env for posting (must be mirrored from Vercel).
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOK_PUBLIC_SNIPPETS: ${{ secrets.WEBHOOK_PUBLIC_SNIPPETS }}
           WEBHOOK_PRIVATE_SNIPPETS: ${{ secrets.WEBHOOK_PRIVATE_SNIPPETS }}
@@ -57,40 +55,50 @@ jobs:
           WEBHOOK_NEW_SNIPPETS: ${{ secrets.WEBHOOK_NEW_SNIPPETS }}
           PUBLIC_CHANNEL_ID: ${{ secrets.PUBLIC_CHANNEL_ID }}
           PRIVATE_CHANNEL_ID: ${{ secrets.PRIVATE_CHANNEL_ID }}
-          # Conservative pacing
           QUEUE_SNIPPET_DELAY_MS: "2000"
         run: |
           set -euo pipefail
+
           FONT="/tmp/fonts/SFPRODISPLAYMEDIUM.OTF"
+
           if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
             CHANGED=$(git show --name-only --pretty="" HEAD -- 'snippets/*.json' || true)
           else
             CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'snippets/*.json' || true)
           fi
+
           if [ -z "${CHANGED// }" ]; then
             echo "No snippet JSON changes"
             exit 0
           fi
+
           while IFS= read -r FILE; do
             [ -z "$FILE" ] && continue
             [ -f "$FILE" ] || continue
+
             echo "Processing $FILE"
+
             QUEUE_ID=$(jq -r '._queueId // empty' "$FILE")
             TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
             UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
+
             if [ -z "$QUEUE_ID" ] || [ "$QUEUE_ID" = "null" ]; then
               echo "Skip: no _queueId"
               continue
             fi
+
             if [ "$TAGGED_LEN" -gt 0 ]; then
               echo "Skip: already tagged"
               continue
             fi
+
             if [ "$UNTAG_LEN" -eq 0 ]; then
               echo "Skip: no untagged_media"
               continue
             fi
+
             BASE="${VERCEL_APP_URL%/}"
+
             fail_job() {
               local msg="$1"
               echo "ERROR: $msg"
@@ -100,66 +108,76 @@ jobs:
                 -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":false,\"errorMessage\":\"$msg\"}" || true
               exit 1
             }
-            # 1) Post untagged to private channel (insert/delete/replay as needed)
+
             curl -fsS -X POST "${BASE}/api/internal-queue-status" \
               -H "Content-Type: application/json" \
               -H "x-internal-secret: ${CALLBACK_SECRET}" \
               -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_private\"}"
+
             export FULL_POST_ACTION="full-post-queue-private"
             export FULL_POST_CLIENT_PAYLOAD
             FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" '{snippetPath: $p}')
             npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
 
-            # The posting script commits messageId via GitHub API; sync it before we edit this file.
             git pull --rebase origin main || true
+
             TAG_URLS='[]'
             i=0
+
             while IFS= read -r URL; do
               [ -z "$URL" ] && continue
               i=$((i+1))
+
               OUT_EXT="mp4"
               RAW="snippet_${i}_raw.${OUT_EXT}"
               OUT="snippet_${i}_tagged.${OUT_EXT}"
+
               curl -fsSL "$URL" -o "$RAW"
+
               FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
+
               ffmpeg -y -i "$RAW" \
-                -map 0:v:0 -map 0:a:0? \
                 -vf "$FILTER" \
                 -c:v libx264 -pix_fmt yuv420p \
-                -profile:v high -level:v 4.1 \
                 -movflags +faststart \
-                -c:a aac -b:a 128k -ar 48000 -ac 2 \
+                -c:a copy \
                 "$OUT"
+
               RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT}")
               TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
+
               if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
                 echo "fast-file upload failed for $FILE"
                 exit 1
               fi
+
               DL="https://fast-file.com/${TITLE}/download"
               TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
+
               rm -f "$RAW" "$OUT"
             done < <(jq -r '.untagged_media[]' "$FILE")
+
             jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
             mv "${FILE}.tmp" "$FILE"
+
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git config user.name "github-actions[bot]"
             git add "$FILE"
             git commit -m "Tag media for ${FILE}"
             git push origin HEAD
 
-            # 2) Post tagged to public channel (insert/delete/replay as needed)
             curl -fsS -X POST "${BASE}/api/internal-queue-status" \
               -H "Content-Type: application/json" \
               -H "x-internal-secret: ${CALLBACK_SECRET}" \
               -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
+
             export FULL_POST_ACTION="full-post-queue-public"
             FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" '{snippetPath: $p, taggedMediaUrls: $t, isNew: false}')
             npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
 
-            # Mark queue done
             curl -fsS -X POST "${BASE}/api/internal-post-complete" \
               -H "Content-Type: application/json" \
               -H "x-internal-secret: ${CALLBACK_SECRET}" \
               -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
+
           done <<< "$CHANGED"
