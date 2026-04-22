@@ -122,7 +122,14 @@ jobs:
               OUT="snippet_${i}_tagged.${OUT_EXT}"
               curl -fsSL "$URL" -o "$RAW"
               FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
-              ffmpeg -y -i "$RAW" -vf "$FILTER" -c:v libx264 -pix_fmt yuv420p -c:a copy -movflags +faststart "$OUT"
+              ffmpeg -y -i "$RAW" \
+                -map 0:v:0 -map 0:a:0? \
+                -vf "$FILTER" \
+                -c:v libx264 -pix_fmt yuv420p \
+                -profile:v high -level:v 4.1 \
+                -movflags +faststart \
+                -c:a aac -b:a 128k -ar 48000 -ac 2 \
+                "$OUT"
               RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT}")
               TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
               if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
