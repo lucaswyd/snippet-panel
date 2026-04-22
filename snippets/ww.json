@@ -14,6 +14,12 @@
   ],
   "feat": "twtw",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1496603821789548545"
+      ],
+      "separatorId": "1496603823630717040"
+    },
     "private": {
       "messageIds": [
         "1496603531015094402"
