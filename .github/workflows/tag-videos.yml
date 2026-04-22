@@ -148,12 +148,22 @@ jobs:
               FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
 
               ffmpeg -y -i "$RAW" \
+                -map 0:v:0 -map 0:a:0? \
+                -dn -sn \
+                -map_metadata -1 -map_chapters -1 \
                 -vf "$FILTER" \
                 -c:v libx264 -pix_fmt yuv420p \
+                -profile:v high -level:v 4.1 \
                 -movflags +faststart \
-                -c:a copy \
+                -brand mp42 \
+                -video_track_timescale 30000 \
+                -c:a aac -b:a 128k -ar 48000 -ac 2 \
                 "$OUT"
-
+              PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,pix_fmt -of json "$OUT")
+              echo "$PROBE"
+              echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
+              echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
+              echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
               RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
               TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
 
