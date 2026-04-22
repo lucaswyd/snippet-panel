@@ -6,10 +6,10 @@ import {
   sleep,
 } from "@/lib/discord";
 import {
-  createOrUpdateSnippetFile,
   getOctokit,
   getSnippetAtPath,
   listSnippetPaths,
+  mutateSnippetAtPath,
 } from "@/lib/github";
 import {
   buildPrivateChannelMessages,
@@ -159,9 +159,13 @@ async function postAndPersistIds(
     webhook,
     messagesFor(target, rec.snippet)
   );
-  const updated = writeMessageIds(rec.snippet, target, ids);
+  const updated = await mutateSnippetAtPath(
+    octokit,
+    rec.path,
+    commitMsg,
+    (current) => writeMessageIds(current, target, ids)
+  );
   rec.snippet = updated;
-  await createOrUpdateSnippetFile(octokit, rec.path, updated, commitMsg);
   return { separatorId: ids.separatorId };
 }
 

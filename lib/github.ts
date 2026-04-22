@@ -11,6 +11,15 @@ function isNotFound(e: unknown): boolean {
   );
 }
 
+function isConflict(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "status" in e &&
+    (e as { status: number }).status === 409
+  );
+}
+
 export interface ChannelsState {
   snippetChannelId: string;
   blankChannelId: string;
@@ -120,6 +129,44 @@ export async function getSnippetAtPath(
 ): Promise<Snippet> {
   const { content } = await getFileContent(octokit, path);
   return JSON.parse(content) as Snippet;
+}
+
+export async function mutateSnippetAtPath(
+  octokit: Octokit,
+  path: string,
+  message: string,
+  mutate: (current: Snippet) => Snippet,
+  maxAttempts = 5
+): Promise<Snippet> {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { content, sha } = await getFileContent(octokit, path);
+    const current = JSON.parse(content) as Snippet;
+    const next = mutate(current);
+    const encoded = Buffer.from(JSON.stringify(next, null, 2), "utf8").toString(
+      "base64"
+    );
+
+    try {
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner: owner(),
+        repo: repo(),
+        path,
+        message,
+        content: encoded,
+        sha,
+      });
+      return next;
+    } catch (e) {
+      if (!isConflict(e) || attempt === maxAttempts) {
+        throw e;
+      }
+      lastError = e;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Failed to update snippet");
 }
 
 /**
