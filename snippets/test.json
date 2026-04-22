@@ -11,5 +11,13 @@
   ],
   "tagged_media": [],
   "_queueId": "cd3e63bd-9da1-414c-a83d-8b57db31fb8e",
-  "feat": "test"
+  "feat": "test",
+  "messageId": {
+    "private": {
+      "messageIds": [
+        "1496573135716090047"
+      ],
+      "separatorId": "1496573137024847972"
+    }
+  }
 }
