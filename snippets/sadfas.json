@@ -11,5 +11,13 @@
   ],
   "tagged_media": [],
   "_queueId": "8f7b147f-6019-4883-be46-d047918e0437",
-  "feat": "fadsf"
+  "feat": "fadsf",
+  "messageId": {
+    "private": {
+      "messageIds": [
+        "1496578248660750346"
+      ],
+      "separatorId": "1496578250359574559"
+    }
+  }
 }
