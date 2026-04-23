@@ -1,4 +1,5 @@
 import {
+  postSeparatorToWebhook,
   deleteMessagesInChannel,
   deleteWebhookMessage,
   postSnippetNewWebhook,
@@ -14,7 +15,9 @@ import {
 import {
   buildPrivateChannelMessages,
   buildSwapChannelMessages,
+  readSnippetMessageIds,
   type Snippet,
+  writeSnippetMessageIds,
 } from "@/lib/snippets";
 
 type ChannelTarget = "public" | "private";
@@ -27,6 +30,7 @@ export type RunFullArchivePostOptions =
       mode: "queue_public";
       snippetPath: string;
       isNew: boolean;
+      pingNewSnippet?: boolean;
       taggedMediaUrls?: string[];
     }
   | {
@@ -35,10 +39,6 @@ export type RunFullArchivePostOptions =
     };
 
 type SnippetRecord = { path: string; snippet: Snippet };
-type MessageIdStore = {
-  public?: { messageIds: string[]; separatorId?: string };
-  private?: { messageIds: string[]; separatorId?: string };
-};
 
 const FULL_SNIPPET_DELAY_MS = Number(
   process.env.FULL_ARCHIVE_SNIPPET_DELAY_MS ?? 2000
@@ -82,51 +82,6 @@ function messagesFor(target: ChannelTarget, s: Snippet): string[] {
     : buildPrivateChannelMessages(s);
 }
 
-function readMessageIds(s: Snippet): MessageIdStore {
-  const cur = s.messageId;
-  if (!cur) return {};
-  if (typeof cur === "object" && cur !== null && !Array.isArray(cur)) {
-    const o = cur as Record<string, unknown>;
-    const parseSide = (
-      v: unknown
-    ): { messageIds: string[]; separatorId?: string } | undefined => {
-      if (Array.isArray(v)) {
-        return {
-          messageIds: v.filter((x): x is string => typeof x === "string"),
-        };
-      }
-      if (typeof v === "object" && v !== null) {
-        const vv = v as Record<string, unknown>;
-        const messageIds = Array.isArray(vv.messageIds)
-          ? vv.messageIds.filter((x): x is string => typeof x === "string")
-          : [];
-        const separatorId =
-          typeof vv.separatorId === "string" ? vv.separatorId : undefined;
-        if (messageIds.length === 0 && !separatorId) return undefined;
-        return { messageIds, separatorId };
-      }
-      return undefined;
-    };
-    return { public: parseSide(o.public), private: parseSide(o.private) };
-  }
-  if (Array.isArray(cur)) {
-    return {
-      public: { messageIds: cur.filter((x): x is string => typeof x === "string") },
-    };
-  }
-  return {};
-}
-
-function writeMessageIds(
-  s: Snippet,
-  target: ChannelTarget,
-  ids: { messageIds: string[]; separatorId: string }
-): Snippet {
-  const m = readMessageIds(s);
-  const next: MessageIdStore = { ...m, [target]: ids };
-  return { ...s, messageId: next };
-}
-
 async function loadSortedRecords(): Promise<SnippetRecord[]> {
   const octokit = getOctokit();
   const paths = await listSnippetPaths(octokit);
@@ -163,16 +118,41 @@ async function postAndPersistIds(
     octokit,
     rec.path,
     commitMsg,
-    (current) => writeMessageIds(current, target, ids)
+    (current) => writeSnippetMessageIds(current, target, ids)
   );
   rec.snippet = updated;
   return { separatorId: ids.separatorId };
 }
 
+async function restoreTrailingSeparator(
+  rec: SnippetRecord,
+  target: ChannelTarget
+): Promise<void> {
+  const currentSide = readSnippetMessageIds(rec.snippet)[target];
+  if (!currentSide?.messageIds?.length) {
+    return;
+  }
+  const octokit = getOctokit();
+  const separatorId = await postSeparatorToWebhook(separatorWebhookFor(target));
+  rec.snippet = await mutateSnippetAtPath(
+    octokit,
+    rec.path,
+    `messageId ${target}: restore separator ${rec.snippet.title}`,
+    (current) => {
+      const side = readSnippetMessageIds(current)[target];
+      if (!side?.messageIds?.length) return current;
+      return writeSnippetMessageIds(current, target, {
+        messageIds: side.messageIds,
+        separatorId,
+      });
+    }
+  );
+}
+
 async function deleteSnippetMessages(rec: SnippetRecord, target: ChannelTarget) {
   const webhook = webhookFor(target);
   const sepWebhook = separatorWebhookFor(target);
-  const side = readMessageIds(rec.snippet)[target];
+  const side = readSnippetMessageIds(rec.snippet)[target];
   const ids = side?.messageIds ?? [];
   for (const id of ids) {
     await deleteWebhookMessage(webhook, id);
@@ -215,7 +195,8 @@ async function runQueueForTarget(
   target: ChannelTarget,
   snippetPath: string,
   taggedMediaUrls?: string[],
-  isNew?: boolean
+  isNew?: boolean,
+  pingNewSnippet?: boolean
 ): Promise<void> {
   const records = await loadSortedRecords();
   const targetRec = records.find((r) => r.path === snippetPath);
@@ -236,6 +217,11 @@ async function runQueueForTarget(
   const isNewest = insertAt === ordered.length - 1;
   if (isNewest) {
     console.log(`[queue-${target}] newest item, append only`);
+    const previous = ordered[ordered.length - 2];
+    if (previous) {
+      await restoreTrailingSeparator(previous, target);
+      await sleep(QUEUE_SNIPPET_DELAY_MS);
+    }
     const { separatorId } = await postAndPersistIds(
       targetRec,
       target,
@@ -277,7 +263,7 @@ async function runQueueForTarget(
   if (target === "public" && isNew) {
     const fresh = records.find((r) => r.path === snippetPath)?.snippet ?? targetRec.snippet;
     if (fresh.tagged_media?.length) {
-      await postSnippetNewWebhook(fresh);
+      await postSnippetNewWebhook(fresh, Boolean(pingNewSnippet));
     }
   }
 }
@@ -297,7 +283,8 @@ export async function runFullArchivePost(
         "public",
         opts.snippetPath,
         opts.taggedMediaUrls,
-        opts.isNew
+        opts.isNew,
+        opts.pingNewSnippet
       );
     default:
       return;

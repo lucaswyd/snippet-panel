@@ -34,15 +34,16 @@ export default async function handler(
     return res.status(400).json({ error: "queueId required" });
   }
 
-  const item = readQueue().find((q) => q.id === queueId);
+  const item = (await readQueue()).find((q) => q.id === queueId);
   const snippetPath =
     item?.snippetPath ??
     (await findSnippetPathByQueueId(getOctokit(), queueId));
   const isNew = item?.isNew ?? false;
+  const pingNewSnippet = item?.pingNewSnippet ?? false;
 
   // The /tmp queue can disappear on Vercel cold starts — still dispatch posting.
   if (item) {
-    updateQueueItem(queueId, { status: "posting_public" });
+    await updateQueueItem(queueId, { status: "posting_public" });
   }
 
   try {
@@ -50,12 +51,15 @@ export default async function handler(
       queueId,
       snippetPath,
       isNew,
+      pingNewSnippet,
       taggedMediaUrls: body.taggedMediaUrls ?? [],
     });
   } catch (e) {
     const msg =
       e instanceof Error ? e.message : "Failed to start full-post workflow";
-    if (item) updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    if (item) {
+      await updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    }
     return res.status(500).json({ error: msg });
   }
 

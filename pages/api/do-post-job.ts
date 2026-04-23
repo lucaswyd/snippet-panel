@@ -30,7 +30,7 @@ export default async function handler(
     return res.status(400).json({ error: "queueId required" });
   }
 
-  const items = readQueue();
+  const items = await readQueue();
   const item = items.find((q) => q.id === queueId);
   if (!item) {
     return res.status(404).json({ error: "Queue item not found" });
@@ -41,14 +41,15 @@ export default async function handler(
       mode: "queue_public",
       snippetPath: item.snippetPath,
       isNew: item.isNew,
+      pingNewSnippet: item.pingNewSnippet,
       taggedMediaUrls: body.taggedMediaUrls,
     });
 
-    updateQueueItem(queueId, { status: "done" });
+    await updateQueueItem(queueId, { status: "done" });
     return res.status(200).json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Post job failed";
-    updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    await updateQueueItem(queueId, { status: "error", errorMessage: msg });
     return res.status(500).json({ error: msg });
   }
 }

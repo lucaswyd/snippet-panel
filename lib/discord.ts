@@ -214,6 +214,10 @@ export async function postSnippetToWebhookUrlWithIds(
   return { messageIds: out, separatorId };
 }
 
+export async function postSeparatorToWebhook(webhookUrl: string): Promise<string> {
+  return postToWebhookWithMessageId(webhookUrl, separatorMessage());
+}
+
 function separatorWebhookUrlFor(snippetWebhookUrl: string): string {
   // Prefer explicit separator webhooks; fall back to posting separators on the snippet webhook.
   if (snippetWebhookUrl === (process.env.WEBHOOK_PUBLIC_SNIPPETS ?? process.env.WEBHOOK_SNIPPETS ?? "")) {
@@ -261,6 +265,26 @@ export async function deleteWebhookMessage(
   await sleep(BOT_REST_GAP_MS);
 }
 
+export async function editWebhookMessage(
+  webhookUrl: string,
+  messageId: string,
+  content: string
+): Promise<void> {
+  const { id, token } = parseWebhookParts(webhookUrl);
+  const url = `${API}/webhooks/${id}/${token}/messages/${messageId}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+    signal: abortWithTimeout(BOT_HTTP_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`Webhook edit failed: ${res.status} ${t}`);
+  }
+  await sleep(BOT_REST_GAP_MS);
+}
+
 /** Bot: only for operations webhooks cannot do (delete, permissions). */
 export async function postChannelMessage(
   channelId: string,
@@ -278,11 +302,14 @@ export async function postChannelMessage(
   await sleep(BOT_REST_GAP_MS);
 }
 
-export async function postSnippetNewWebhook(s: Snippet): Promise<void> {
+export async function postSnippetNewWebhook(
+  s: Snippet,
+  includePing = true
+): Promise<void> {
   const url = process.env.WEBHOOK_NEW_SNIPPETS;
   if (!url) throw new Error("WEBHOOK_NEW_SNIPPETS is not set");
   const base = url.includes("?") ? `${url}&wait=true` : `${url}?wait=true`;
-  const msgs = buildNewSnippetsMessages(s);
+  const msgs = buildNewSnippetsMessages(s, includePing);
   for (const m of msgs) {
     await executeWebhookPost(base, { content: m });
     await sleep(WEBHOOK_POST_GAP_MS);
@@ -436,4 +463,3 @@ export async function setRoleChannelOverwrite(
   }
   await sleep(BOT_REST_GAP_MS);
 }
-

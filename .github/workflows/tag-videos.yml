@@ -92,6 +92,15 @@ jobs:
             QUEUE_ID=$(jq -r '._queueId // empty' "$FILE")
             TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
             UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
+            SNIPPET_TITLE=$(jq -r '.title // "Untitled"' "$FILE")
+            SAFE_TITLE=$(printf '%s' "$SNIPPET_TITLE" | tr '\n' ' ' | sed 's/[\\/:*?"<>|]/ /g; s/[[:space:]]\+/ /g; s/^ *//; s/ *$//')
+            [ -n "$SAFE_TITLE" ] || SAFE_TITLE="Untitled"
+            IS_NEW_SNIPPET="false"
+            PING_NEW_SNIPPET="false"
+            if [ -f state/queue.json ]; then
+              IS_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].isNew // false' state/queue.json)
+              PING_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].pingNewSnippet // false' state/queue.json)
+            fi
 
             if [ -z "$QUEUE_ID" ] || [ "$QUEUE_ID" = "null" ]; then
               echo "Skip: no _queueId"
@@ -141,7 +150,7 @@ jobs:
 
               OUT_EXT="mp4"
               RAW="snippet_${i}_raw.${OUT_EXT}"
-              OUT="snippet_${i}_tagged.${OUT_EXT}"
+              OUT="${SAFE_TITLE} (Snippet ${i}).${OUT_EXT}"
 
               curl -fsSL "$URL" -o "$RAW"
 
@@ -193,7 +202,7 @@ jobs:
               -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
 
             export FULL_POST_ACTION="full-post-queue-public"
-            FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" '{snippetPath: $p, taggedMediaUrls: $t, isNew: false}')
+            FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" --argjson isNew "$IS_NEW_SNIPPET" --argjson ping "$PING_NEW_SNIPPET" '{snippetPath: $p, taggedMediaUrls: $t, isNew: $isNew, pingNewSnippet: $ping}')
             npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
 
             curl -fsS -X POST "${BASE}/api/internal-post-complete" \

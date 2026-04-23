@@ -1,5 +1,10 @@
 import fs from "fs";
 import path from "path";
+import {
+  getFileContentOptional,
+  getOctokit,
+  mutateJsonFile,
+} from "@/lib/github";
 import type { QueueItem, Snippet } from "@/lib/snippets";
 
 /**
@@ -14,6 +19,7 @@ function stateDir(): string {
 
 const STATE_DIR = stateDir();
 const QUEUE_FILE = path.join(STATE_DIR, "queue.json");
+const QUEUE_STATE_PATH = "state/queue.json";
 
 function ensureStateDir(): void {
   if (!fs.existsSync(STATE_DIR)) {
@@ -21,46 +27,146 @@ function ensureStateDir(): void {
   }
 }
 
-export function readQueue(): QueueItem[] {
+function hasGitHubQueueBacking(): boolean {
+  return Boolean(
+    process.env.GITHUB_TOKEN &&
+      process.env.GITHUB_REPO_OWNER &&
+      process.env.GITHUB_REPO_NAME
+  );
+}
+
+function normalizeQueueItem(item: QueueItem): QueueItem {
+  return {
+    ...item,
+    pingNewSnippet: Boolean(item.pingNewSnippet),
+  };
+}
+
+function readQueueLocal(): QueueItem[] {
   try {
     ensureStateDir();
     if (!fs.existsSync(QUEUE_FILE)) return [];
     const raw = fs.readFileSync(QUEUE_FILE, "utf8");
-    return JSON.parse(raw) as QueueItem[];
+    const items = JSON.parse(raw) as QueueItem[];
+    return Array.isArray(items) ? items.map(normalizeQueueItem) : [];
   } catch {
     return [];
   }
 }
 
-export function writeQueue(items: QueueItem[]): void {
+function writeQueueLocal(items: QueueItem[]): void {
   ensureStateDir();
   fs.writeFileSync(QUEUE_FILE, JSON.stringify(items, null, 2), "utf8");
 }
 
-export function updateQueueItem(
+export async function readQueue(): Promise<QueueItem[]> {
+  if (!hasGitHubQueueBacking()) {
+    return readQueueLocal();
+  }
+
+  try {
+    const octokit = getOctokit();
+    const file = await getFileContentOptional(octokit, QUEUE_STATE_PATH);
+    if (!file) return [];
+    const items = JSON.parse(file.content) as QueueItem[];
+    return Array.isArray(items) ? items.map(normalizeQueueItem) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function writeQueue(items: QueueItem[]): Promise<void> {
+  const normalized = items.map(normalizeQueueItem);
+  if (!hasGitHubQueueBacking()) {
+    writeQueueLocal(normalized);
+    return;
+  }
+  const octokit = getOctokit();
+  await mutateJsonFile(
+    octokit,
+    QUEUE_STATE_PATH,
+    `queue: sync (${normalized.length})`,
+    [] as QueueItem[],
+    () => normalized
+  );
+}
+
+export async function updateQueueItem(
   id: string,
   patch: Partial<QueueItem>
-): QueueItem | null {
-  const items = readQueue();
-  const i = items.findIndex((q) => q.id === id);
-  if (i < 0) return null;
-  items[i] = { ...items[i], ...patch };
-  writeQueue(items);
-  return items[i];
+): Promise<QueueItem | null> {
+  let updated: QueueItem | null = null;
+
+  if (!hasGitHubQueueBacking()) {
+    const items = readQueueLocal();
+    const i = items.findIndex((q) => q.id === id);
+    if (i < 0) return null;
+    items[i] = normalizeQueueItem({ ...items[i], ...patch });
+    updated = items[i];
+    writeQueueLocal(items);
+    return updated;
+  }
+
+  const octokit = getOctokit();
+  await mutateJsonFile(
+    octokit,
+    QUEUE_STATE_PATH,
+    `queue: update ${id.slice(0, 8)}`,
+    [] as QueueItem[],
+    (items) => {
+      const next = Array.isArray(items) ? [...items] : [];
+      const i = next.findIndex((q) => q.id === id);
+      if (i < 0) return next;
+      next[i] = normalizeQueueItem({ ...next[i], ...patch });
+      updated = next[i];
+      return next;
+    }
+  );
+  return updated;
 }
 
-export function pushQueueItem(item: QueueItem): void {
-  const items = readQueue();
-  items.push(item);
-  writeQueue(items);
+export async function pushQueueItem(item: QueueItem): Promise<void> {
+  const normalized = normalizeQueueItem(item);
+  if (!hasGitHubQueueBacking()) {
+    const items = readQueueLocal();
+    items.push(normalized);
+    writeQueueLocal(items);
+    return;
+  }
+  const octokit = getOctokit();
+  await mutateJsonFile(
+    octokit,
+    QUEUE_STATE_PATH,
+    `queue: add ${item.id.slice(0, 8)}`,
+    [] as QueueItem[],
+    (items) => [...(Array.isArray(items) ? items : []), normalized]
+  );
 }
 
-export function removeQueueItem(id: string): boolean {
-  const items = readQueue();
-  const next = items.filter((q) => q.id !== id);
-  if (next.length === items.length) return false;
-  writeQueue(next);
-  return true;
+export async function removeQueueItem(id: string): Promise<boolean> {
+  let removed = false;
+
+  if (!hasGitHubQueueBacking()) {
+    const items = readQueueLocal();
+    const next = items.filter((q) => q.id !== id);
+    removed = next.length !== items.length;
+    if (removed) writeQueueLocal(next);
+    return removed;
+  }
+
+  const octokit = getOctokit();
+  await mutateJsonFile(
+    octokit,
+    QUEUE_STATE_PATH,
+    `queue: remove ${id.slice(0, 8)}`,
+    [] as QueueItem[],
+    (items) => {
+      const next = (Array.isArray(items) ? items : []).filter((q) => q.id !== id);
+      removed = next.length !== (Array.isArray(items) ? items.length : 0);
+      return next;
+    }
+  );
+  return removed;
 }
 
 export type RepostStep =

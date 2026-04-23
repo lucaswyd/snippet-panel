@@ -35,7 +35,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (typeof body.errorMessage === "string" && body.errorMessage.trim()) {
     patch.errorMessage = body.errorMessage.trim();
   }
-  updateQueueItem(queueId, patch);
+  await updateQueueItem(queueId, patch);
   return res.status(200).json({ ok: true });
 }
-

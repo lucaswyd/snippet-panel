@@ -131,18 +131,21 @@ export async function getSnippetAtPath(
   return JSON.parse(content) as Snippet;
 }
 
-export async function mutateSnippetAtPath(
+export async function mutateJsonFile<T>(
   octokit: Octokit,
   path: string,
   message: string,
-  mutate: (current: Snippet) => Snippet,
+  defaultValue: T,
+  mutate: (current: T) => T,
   maxAttempts = 5
-): Promise<Snippet> {
+): Promise<T> {
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const { content, sha } = await getFileContent(octokit, path);
-    const current = JSON.parse(content) as Snippet;
+    const currentFile = await getFileContentOptional(octokit, path);
+    const current = currentFile
+      ? (JSON.parse(currentFile.content) as T)
+      : defaultValue;
     const next = mutate(current);
     const encoded = Buffer.from(JSON.stringify(next, null, 2), "utf8").toString(
       "base64"
@@ -155,7 +158,7 @@ export async function mutateSnippetAtPath(
         path,
         message,
         content: encoded,
-        sha,
+        ...(currentFile ? { sha: currentFile.sha } : {}),
       });
       return next;
     } catch (e) {
@@ -166,7 +169,24 @@ export async function mutateSnippetAtPath(
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error("Failed to update snippet");
+  throw lastError instanceof Error ? lastError : new Error(`Failed to update ${path}`);
+}
+
+export async function mutateSnippetAtPath(
+  octokit: Octokit,
+  path: string,
+  message: string,
+  mutate: (current: Snippet) => Snippet,
+  maxAttempts = 5
+): Promise<Snippet> {
+  return mutateJsonFile(
+    octokit,
+    path,
+    message,
+    {} as Snippet,
+    mutate,
+    maxAttempts
+  );
 }
 
 /**

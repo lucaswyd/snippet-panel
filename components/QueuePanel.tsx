@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { usePostingEstimate } from "@/hooks/usePostingEstimate";
 import { useRepost } from "@/components/RepostContext";
 import type { QueueItem } from "@/lib/snippets";
 
@@ -47,7 +46,6 @@ function label(status: QueueItem["status"]): string {
 
 export default function QueuePanel() {
   const [items, setItems] = useState<QueueItem[]>([]);
-  const { data: est } = usePostingEstimate(true);
   const {
     repostUiVisible,
     job,
@@ -92,21 +90,6 @@ export default function QueuePanel() {
       >
         Processing queue
       </h2>
-      {est && (
-        <p
-          className="subtle"
-          style={{
-            fontSize: "0.78rem",
-            lineHeight: 1.45,
-            margin: "0 0 1rem",
-          }}
-        >
-          <strong>Tagging:</strong> {est.taggingNote}{" "}
-          <strong>Discord rebuild</strong> (repost archive, clear channel, swap
-          permissions, optional new snippet post) is usually{" "}
-          <span className="mono">{est.queueFullPipeline.summary}</span>.
-        </p>
-      )}
       {repostUiVisible && (
         <div
           className="queue-item"

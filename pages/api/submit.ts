@@ -14,6 +14,7 @@ type SubmitBody = {
   date: string;
   released: boolean;
   isNew: boolean;
+  pingNewSnippet?: boolean;
   rawFileUrls: string[];
 };
 
@@ -49,9 +50,9 @@ export default async function handler(
   const baseNoExt = base.endsWith(".json") ? base.slice(0, -5) : base;
   let snippetPath = `snippets/${base}`;
   if (existingPaths.has(snippetPath)) {
-    let n = 2;
+    let n = 1;
     for (;;) {
-      const candidate = `snippets/${baseNoExt} (Snippet ${n}).json`;
+      const candidate = `snippets/${baseNoExt} (${n}).json`;
       if (!existingPaths.has(candidate)) {
         snippetPath = candidate;
         break;
@@ -82,12 +83,13 @@ export default async function handler(
     snippet: { ...snippet },
     status: "tagging",
     isNew: Boolean(body.isNew),
+    pingNewSnippet: Boolean(body.isNew && body.pingNewSnippet),
     createdAt,
     rawFileUrls: [...body.rawFileUrls],
   };
 
   try {
-    pushQueueItem(queueItem);
+    await pushQueueItem(queueItem);
   } catch (e) {
     const msg =
       e instanceof Error ? e.message : "Could not save queue (filesystem)";
@@ -103,7 +105,7 @@ export default async function handler(
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : "GitHub commit failed";
-    updateQueueItem(id, { status: "error", errorMessage: msg });
+    await updateQueueItem(id, { status: "error", errorMessage: msg });
     return res.status(500).json({ error: msg });
   }
 

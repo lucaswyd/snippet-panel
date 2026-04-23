@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from "react";
-import { usePostingEstimate } from "@/hooks/usePostingEstimate";
+import React, { useCallback, useRef, useState } from "react";
+import { snippetVideoFilename } from "@/lib/snippets";
 
 function todayISODate(): string {
   const d = new Date();
@@ -43,20 +43,30 @@ export default function SnippetForm() {
   const [date, setDate] = useState(todayISODate());
   const [released, setReleased] = useState(false);
   const [isNew, setIsNew] = useState(false);
+  const [pingNewSnippet, setPingNewSnippet] = useState(false);
   const [uploads, setUploads] = useState<UploadRow[]>([]);
   const [discordBanner, setDiscordBanner] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const { data: est } = usePostingEstimate(true);
+  const uploadIndexRef = useRef(1);
 
-  const uploadOne = useCallback((file: File) => {
+  const uploadOne = useCallback((file: File, uploadIndex: number) => {
+    const originalExt = file.name.split(".").pop()?.trim().toLowerCase() || "mp4";
+    const renamed = new File(
+      [file],
+      snippetVideoFilename(title || "Untitled", uploadIndex, originalExt),
+      {
+        type: file.type || "video/mp4",
+        lastModified: file.lastModified,
+      }
+    );
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
-        : `${file.name}-${Date.now()}`;
+        : `${renamed.name}-${Date.now()}`;
     setUploads((u) => [
       ...u,
-      { id, name: file.name, size: file.size, progress: 0 },
+      { id, name: renamed.name, size: renamed.size, progress: 0 },
     ]);
 
     const patchRow = (patch: Partial<UploadRow>) => {
@@ -66,7 +76,7 @@ export default function SnippetForm() {
     };
 
     const uploadViaVercelProxy = () => {
-      if (file.size > PROXY_MAX_BYTES) {
+      if (renamed.size > PROXY_MAX_BYTES) {
         patchRow({
           error:
             "Could not reach fast-file from the browser and file is too large for the server relay (~4MB). Try another network or upload via Discord.",
@@ -75,7 +85,7 @@ export default function SnippetForm() {
         return;
       }
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", renamed);
       const px = new XMLHttpRequest();
       px.upload.addEventListener("progress", (ev) => {
         if (!ev.lengthComputable) return;
@@ -127,7 +137,7 @@ export default function SnippetForm() {
     };
 
     const fd = new FormData();
-    fd.append("files", file, file.name);
+    fd.append("files", renamed, renamed.name);
 
     const xhr = new XMLHttpRequest();
     xhr.upload.addEventListener("progress", (ev) => {
@@ -164,13 +174,15 @@ export default function SnippetForm() {
     });
     xhr.open("POST", FAST_FILE_UPLOAD);
     xhr.send(fd);
-  }, []);
+  }, [title]);
 
   const onFiles = useCallback(
     (fileList: FileList | File[]) => {
       setDiscordBanner(false);
       for (const file of Array.from(fileList)) {
-        uploadOne(file);
+        const uploadIndex = uploadIndexRef.current;
+        uploadIndexRef.current += 1;
+        uploadOne(file, uploadIndex);
       }
     },
     [uploadOne]
@@ -210,6 +222,7 @@ export default function SnippetForm() {
           date,
           released,
           isNew,
+          pingNewSnippet,
           rawFileUrls: urls,
         }),
       });
@@ -226,7 +239,9 @@ export default function SnippetForm() {
       setDate(todayISODate());
       setReleased(false);
       setIsNew(false);
+      setPingNewSnippet(false);
       setUploads([]);
+      uploadIndexRef.current = 1;
     } catch {
       setSubmitError("Network error");
     } finally {
@@ -336,14 +351,40 @@ export default function SnippetForm() {
 
       <div style={{ marginBottom: "1.1rem" }}>
         <div className="switch-row">
-          <span>New snippet announcement</span>
-          <label className="toggle">
+          <span>New snippet?</span>
+          <label className="slider-toggle" aria-label="New snippet">
             <input
               type="checkbox"
               checked={isNew}
-              onChange={(e) => setIsNew(e.target.checked)}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIsNew(checked);
+                if (!checked) setPingNewSnippet(false);
+              }}
             />
-            Post to new snippets channel
+            <span className="slider-toggle-track" />
+          </label>
+        </div>
+      </div>
+
+      <div
+        style={{
+          marginBottom: "1.1rem",
+          maxHeight: isNew ? 80 : 0,
+          opacity: isNew ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 220ms ease, opacity 220ms ease",
+        }}
+      >
+        <div className="switch-row">
+          <span>Ping?</span>
+          <label className="slider-toggle" aria-label="Ping new snippet role">
+            <input
+              type="checkbox"
+              checked={pingNewSnippet}
+              onChange={(e) => setPingNewSnippet(e.target.checked)}
+            />
+            <span className="slider-toggle-track" />
           </label>
         </div>
       </div>
@@ -374,7 +415,7 @@ export default function SnippetForm() {
         </div>
         {uploads.map((u) => (
           <div key={u.id} className="file-row mono">
-            <span>
+            <span className="file-row-name">
               {u.name} — {(u.size / 1024 / 1024).toFixed(1)} MB
             </span>
             {u.error ? (
@@ -392,24 +433,6 @@ export default function SnippetForm() {
           </div>
         ))}
       </div>
-
-      {est && (
-        <p
-          className="subtle"
-          style={{
-            fontSize: "0.78rem",
-            lineHeight: 1.45,
-            marginBottom: "1rem",
-          }}
-        >
-          Submitting adds a queue job: <strong>FFmpeg tagging</strong>{" "}
-          ({est.taggingNote}) Then the app <strong>reposts the whole archive</strong>{" "}
-          to Discord, clears the snippet channel, swaps permissions
-          {isNew ? ", and posts the new snippet announcement" : ""} — typically{" "}
-          <span className="mono">{est.queueFullPipeline.summary}</span> for the
-          Discord + GitHub portion (varies with archive size and rate limits).
-        </p>
-      )}
 
       <button
         type="submit"

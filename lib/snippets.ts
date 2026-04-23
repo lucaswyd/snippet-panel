@@ -18,6 +18,16 @@ export interface Snippet {
   messageId?: unknown;
 }
 
+export interface SnippetMessageIds {
+  messageIds: string[];
+  separatorId?: string;
+}
+
+export interface SnippetMessageIdStore {
+  public?: SnippetMessageIds;
+  private?: SnippetMessageIds;
+}
+
 export type QueueStatus =
   | "pending"
   | "tagging"
@@ -35,6 +45,7 @@ export interface QueueItem {
   status: QueueStatus;
   errorMessage?: string;
   isNew: boolean;
+  pingNewSnippet: boolean;
   createdAt: string;
   rawFileUrls: string[];
 }
@@ -63,6 +74,51 @@ export function sortSnippets(snippets: Snippet[]): Snippet[] {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.title.localeCompare(b.title);
   });
+}
+
+export function readSnippetMessageIds(s: Snippet): SnippetMessageIdStore {
+  const cur = s.messageId;
+  if (!cur) return {};
+  if (typeof cur === "object" && cur !== null && !Array.isArray(cur)) {
+    const o = cur as Record<string, unknown>;
+    const parseSide = (v: unknown): SnippetMessageIds | undefined => {
+      if (Array.isArray(v)) {
+        return {
+          messageIds: v.filter((x): x is string => typeof x === "string"),
+        };
+      }
+      if (typeof v === "object" && v !== null) {
+        const vv = v as Record<string, unknown>;
+        const messageIds = Array.isArray(vv.messageIds)
+          ? vv.messageIds.filter((x): x is string => typeof x === "string")
+          : [];
+        const separatorId =
+          typeof vv.separatorId === "string" ? vv.separatorId : undefined;
+        if (messageIds.length === 0 && !separatorId) return undefined;
+        return { messageIds, separatorId };
+      }
+      return undefined;
+    };
+    return { public: parseSide(o.public), private: parseSide(o.private) };
+  }
+  if (Array.isArray(cur)) {
+    return {
+      public: { messageIds: cur.filter((x): x is string => typeof x === "string") },
+    };
+  }
+  return {};
+}
+
+export function writeSnippetMessageIds(
+  s: Snippet,
+  target: "public" | "private",
+  ids: SnippetMessageIds
+): Snippet {
+  const next: SnippetMessageIdStore = {
+    ...readSnippetMessageIds(s),
+    [target]: ids,
+  };
+  return { ...s, messageId: next };
 }
 
 function buildTitleLine(s: Snippet): string {
@@ -122,9 +178,13 @@ function buildSnippetMessagesWithUrls(s: Snippet, urls: string[]): string[] {
 /**
  * Messages for WEBHOOK_NEW_SNIPPETS: same as swap, but the **last** message gets role ping prepended.
  */
-export function buildNewSnippetsMessages(s: Snippet): string[] {
+export function buildNewSnippetsMessages(
+  s: Snippet,
+  includePing = true
+): string[] {
   const base = buildSwapChannelMessages(s);
   if (base.length === 0) return base;
+  if (!includePing) return base;
   const last = base.length - 1;
   const withPing = `${NEW_SNIPPET_ROLE_PING} ${base[last]}`;
   return [...base.slice(0, last), withPing];
@@ -146,16 +206,30 @@ export function slugifyTitle(title: string): string {
   );
 }
 
-/**
- * JSON file under `snippets/`, e.g. `Doin Good.json`.
- * Strips only characters illegal in paths (`\ / : * ? " < > |`).
- */
-export function snippetFilename(title: string): string {
-  const base = title
+function sanitizeFilenameBase(title: string): string {
+  return title
     .trim()
     .replace(/[\\/:*?"<>|]/g, "")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 200);
+}
+
+/**
+ * JSON file under `snippets/`, e.g. `Doin Good.json`.
+ * Strips only characters illegal in paths (`\ / : * ? " < > |`).
+ */
+export function snippetFilename(title: string): string {
+  const base = sanitizeFilenameBase(title);
   return `${base || "Untitled"}.json`;
+}
+
+export function snippetVideoFilename(
+  title: string,
+  index: number,
+  extension: string
+): string {
+  const base = sanitizeFilenameBase(title) || "Untitled";
+  const ext = extension.replace(/^\./, "").trim() || "mp4";
+  return `${base} (Snippet ${index}).${ext}`;
 }

@@ -1,5 +1,4 @@
 import React from "react";
-import { usePostingEstimate } from "@/hooks/usePostingEstimate";
 import { useRepost } from "@/components/RepostContext";
 
 export default function RepostModal() {
@@ -12,7 +11,6 @@ export default function RepostModal() {
     error,
     startRepost,
   } = useRepost();
-  const { data: est } = usePostingEstimate(modalOpen);
 
   if (!modalOpen) return null;
 
@@ -40,22 +38,6 @@ export default function RepostModal() {
               <strong>GitHub Actions</strong> (long timeout). You can close this
               tab — check the Processing queue or the Actions tab on GitHub.
             </p>
-            {est && (
-              <p
-                className="subtle"
-                style={{
-                  fontSize: "0.85rem",
-                  lineHeight: 1.5,
-                  marginBottom: "1.25rem",
-                }}
-              >
-                Repo has{" "}
-                <span className="mono">{est.taggedSnippetCount}</span> tagged
-                snippets. Manual repost typically takes{" "}
-                <span className="mono">{est.repost.summary}</span> (Discord
-                pacing + clearing the snippet channel + GitHub).
-              </p>
-            )}
             <div className="row" style={{ gap: "0.75rem" }}>
               <button type="button" className="btn btn-ghost" onClick={closeModal}>
                 Cancel

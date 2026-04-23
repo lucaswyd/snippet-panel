@@ -35,9 +35,9 @@ export default async function handler(
     return res.status(400).json({ error: "snippetPath required" });
   }
 
-  const item = readQueue().find((q) => q.id === queueId);
+  const item = (await readQueue()).find((q) => q.id === queueId);
   if (item) {
-    updateQueueItem(queueId, { status: "posting_private" });
+    await updateQueueItem(queueId, { status: "posting_private" });
   }
   try {
     await triggerRepositoryDispatch("full-post-queue-private", {
@@ -47,7 +47,7 @@ export default async function handler(
     return res.status(200).json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to dispatch private queue post";
-    if (item) updateQueueItem(queueId, { status: "error", errorMessage: msg });
+    if (item) await updateQueueItem(queueId, { status: "error", errorMessage: msg });
     return res.status(500).json({ error: msg });
   }
 }

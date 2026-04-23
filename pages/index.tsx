@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import Head from "next/head";
 import SnippetForm from "@/components/SnippetForm";
 import QueuePanel from "@/components/QueuePanel";
+import SnippetLibrary from "@/components/SnippetLibrary";
 import RepostModal from "@/components/RepostModal";
 import { RepostProvider, useRepost } from "@/components/RepostContext";
 
 function HomeInner() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeView, setActiveView] = useState<"queue" | "library">("queue");
   const { openRepostFromMenu } = useRepost();
   const triggerPrivateFullArchive = async () => {
     await fetch("/api/trigger-full-post-private", { method: "POST" });
@@ -86,21 +88,47 @@ function HomeInner() {
         </div>
 
         <header style={{ marginBottom: "2rem", maxWidth: 560 }}>
-          <h1 style={{ fontSize: "2rem" }}>Snippet Panel</h1>
+          <p className="page-kicker">Snippet control room</p>
+          <h1 style={{ fontSize: "2.35rem" }}>Snippet Panel</h1>
+          <p className="subtle" style={{ fontSize: "0.95rem", lineHeight: 1.7 }}>
+            Queue new uploads, track processing, and step into the archive view to
+            edit posted snippet metadata without leaving the panel.
+          </p>
         </header>
 
-        <div
-          className="layout-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 340px",
-            gap: "1.5rem",
-            alignItems: "start",
-          }}
-        >
-          <SnippetForm />
-          <QueuePanel />
+        <div className="panel page-switcher">
+          <button
+            type="button"
+            className={`page-tab${activeView === "queue" ? " active" : ""}`}
+            onClick={() => setActiveView("queue")}
+          >
+            Queue
+          </button>
+          <button
+            type="button"
+            className={`page-tab${activeView === "library" ? " active" : ""}`}
+            onClick={() => setActiveView("library")}
+          >
+            Snippet Library
+          </button>
         </div>
+
+        {activeView === "queue" ? (
+          <div
+            className="layout-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 340px",
+              gap: "1.5rem",
+              alignItems: "start",
+            }}
+          >
+            <SnippetForm />
+            <QueuePanel />
+          </div>
+        ) : (
+          <SnippetLibrary />
+        )}
         <style jsx>{`
           @media (max-width: 960px) {
             .layout-grid {

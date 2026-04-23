@@ -36,7 +36,7 @@ export default async function handler(
   }
 
   if (body.ok === true) {
-    updateQueueItem(queueId, { status: "done" });
+    await updateQueueItem(queueId, { status: "done" });
     return res.status(200).json({ ok: true });
   }
 
@@ -44,6 +44,6 @@ export default async function handler(
     typeof body.errorMessage === "string" && body.errorMessage.trim()
       ? body.errorMessage.trim()
       : "Workflow failed";
-  updateQueueItem(queueId, { status: "error", errorMessage: err });
+  await updateQueueItem(queueId, { status: "error", errorMessage: err });
   return res.status(200).json({ ok: true });
 }

@@ -29,6 +29,7 @@ async function main(): Promise<void> {
           queueId?: string;
           snippetPath?: string;
           isNew?: boolean;
+          pingNewSnippet?: boolean;
           taggedMediaUrls?: string[];
         })
       : {};
@@ -39,6 +40,7 @@ async function main(): Promise<void> {
       mode: "queue_public",
       snippetPath: p.snippetPath,
       isNew: Boolean(p.isNew),
+      pingNewSnippet: Boolean(p.pingNewSnippet),
       taggedMediaUrls: Array.isArray(p.taggedMediaUrls)
         ? p.taggedMediaUrls
         : undefined,
