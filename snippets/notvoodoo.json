@@ -14,6 +14,12 @@
   ],
   "feat": "not",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1496925576777175040"
+      ],
+      "separatorId": "1496925578065088714"
+    },
     "private": {
       "messageIds": [
         "1496925427749617835"
