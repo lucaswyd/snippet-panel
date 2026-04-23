@@ -50,7 +50,7 @@ export interface QueueItem {
   rawFileUrls: string[];
 }
 
-export const BLANK_EMOJI = "<:blank:1442341014307082320>";
+export const BLANK_EMOJI = "​";
 export const NEW_SNIPPET_ROLE_PING = "<@&1429640765692186714>";
 
 export function linkLine(url: string): string {
