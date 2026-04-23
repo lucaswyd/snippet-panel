@@ -14,6 +14,12 @@
   ],
   "feat": "babydrill",
   "messageId": {
+    "public": {
+      "messageIds": [
+        "1496923896702701768"
+      ],
+      "separatorId": "1496923898321571951"
+    },
     "private": {
       "messageIds": [
         "1496923496901644378"
