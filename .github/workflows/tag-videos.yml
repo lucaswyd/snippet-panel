@@ -37,7 +37,17 @@ jobs:
       - name: Install Node deps
         run: npm ci
 
+      - name: Cache FFmpeg
+        id: cache-ffmpeg
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/bin/ffmpeg
+            /usr/local/bin/ffprobe
+          key: ffmpeg-${{ runner.os }}-v1
+
       - name: Install FFmpeg
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
         run: |
           sudo apt-get update && sudo apt-get install -y curl jq
 
@@ -105,11 +115,6 @@ jobs:
           SNIPPET_TITLE=$(jq -r '.title // "Untitled"' "$FILE")
           SAFE_TITLE=$(printf '%s' "$SNIPPET_TITLE" | tr '\n' ' ' | sed 's/[\\/:*?"<>|]/ /g; s/[[:space:]]\+/ /g; s/^ *//; s/ *$//')
           [ -n "$SAFE_TITLE" ] || SAFE_TITLE="Untitled"
-
-          if [ "$TAGGED_LEN" -gt 0 ]; then
-            echo "Skip: already tagged"
-            exit 0
-          fi
 
           if [ "$UNTAG_LEN" -eq 0 ]; then
             echo "Skip: no untagged_media"
