@@ -13,5 +13,5 @@
     "pages/api/repost-status.ts": { "maxDuration": 15 },
     "pages/api/announce.ts": { "maxDuration": 60 }
   },
-  "ignoreCommand": "git diff --quiet HEAD^..HEAD state/ queue.json"
+  "ignoreCommand": "sh -c 'git diff --name-only HEAD^..HEAD | grep -v \"^state/\" || exit 0'"
 }
