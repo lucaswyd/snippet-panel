@@ -601,12 +601,7 @@ export default function SnippetLibrary() {
 
                 <div className="library-media-header">
                   <div>
-                    <h4 className="library-media-title">Media grid</h4>
-                    <p className="subtle">
-                      Five embeds fit in one Discord message. If a change pushes a
-                      snippet over that limit, the panel rebuilds that snippet and the
-                      needed tail so overflow stays in the right place.
-                    </p>
+                    <h4 className="library-media-title">Media</h4>
                   </div>
                   <div className="library-editor-actions">
                     <button type="button" className="btn btn-ghost" onClick={addMedia}>
