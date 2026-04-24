@@ -544,11 +544,6 @@ export default function SnippetLibrary() {
                   Add at least one media pair to keep the snippet live in Discord.
                 </p>
               ) : null}
-
-              <p className="subtle" style={{ margin: "1rem 0 0" }}>
-                Saves update the repo snippet, keep private/public media order in sync,
-                and rebuild downstream messages automatically when overflow changes.
-              </p>
             </>
           )}
         </div>
