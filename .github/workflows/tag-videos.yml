@@ -76,10 +76,28 @@ jobs:
           # Download snippet file from snippets repo via GitHub API
           SNIPPET_PATH_ENCODED=$(echo "$SNIPPET_PATH" | jq -sRr @uri)
           SNIPPET_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
-          HTTP_CODE=$(curl -fsSL -o /dev/null -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
 
-          if [ "$HTTP_CODE" = "404" ]; then
-            echo "Snippet file not found: $SNIPPET_PATH"
+          # Retry with delay to handle timing issues
+          MAX_ATTEMPTS=10
+          ATTEMPT=0
+          HTTP_CODE=404
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            HTTP_CODE=$(curl -fsSL -o /dev/null -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              break
+            fi
+
+            ATTEMPT=$((ATTEMPT+1))
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "File not ready (attempt $ATTEMPT/$MAX_ATTEMPTS), retrying in 2s..."
+              sleep 2
+            fi
+          done
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Snippet file not found after $MAX_ATTEMPTS attempts: $SNIPPET_PATH"
             exit 1
           fi
 
