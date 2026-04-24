@@ -1,9 +1,15 @@
-import React, { useDeferredValue, useEffect, useState } from "react";
+import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import type { Snippet } from "@/lib/snippets";
 
 type SnippetRecord = {
   path: string;
   snippet: Snippet;
+};
+
+type MediaDraft = {
+  id: string;
+  untaggedUrl: string;
+  taggedUrl: string;
 };
 
 type Draft = {
@@ -14,9 +20,20 @@ type Draft = {
   prodConfirmed: boolean;
   date: string;
   released: boolean;
+  media: MediaDraft[];
 };
 
 function draftFromSnippet(snippet: Snippet): Draft {
+  const mediaLen = Math.max(
+    snippet.untagged_media.length,
+    snippet.tagged_media.length
+  );
+  const media = Array.from({ length: mediaLen }, (_, index) => ({
+    id: `${snippet.createdAt}-${index}`,
+    untaggedUrl: snippet.untagged_media[index] ?? "",
+    taggedUrl: snippet.tagged_media[index] ?? "",
+  }));
+
   return {
     title: snippet.title,
     titleConfirmed: snippet.titleConfirmed,
@@ -25,14 +42,25 @@ function draftFromSnippet(snippet: Snippet): Draft {
     prodConfirmed: snippet.prodConfirmed,
     date: snippet.date,
     released: snippet.released,
+    media,
   };
 }
 
-function displayTitle(snippet: Snippet): string {
-  const title = `${snippet.title}${snippet.titleConfirmed ? "" : "*"}`;
+function snippetCountLabel(count: number): string {
+  return `${count} snippet${count === 1 ? "" : "s"}`;
+}
+
+function renderTitle(snippet: { title: string; titleConfirmed: boolean; feat?: string }) {
   const feat = snippet.feat?.trim();
-  if (!feat) return title;
-  return `${title} (feat. ${feat})`;
+  return (
+    <>
+      <span>
+        {snippet.title}
+        {snippet.titleConfirmed ? "" : "*"}
+      </span>
+      {feat ? <span className="library-title-feat"> (feat. {feat})</span> : null}
+    </>
+  );
 }
 
 export default function SnippetLibrary() {
@@ -42,7 +70,11 @@ export default function SnippetLibrary() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
+  const [draggingMediaId, setDraggingMediaId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
 
   const load = async () => {
@@ -79,21 +111,26 @@ export default function SnippetLibrary() {
 
   useEffect(() => {
     setDraft(selectedRecord ? draftFromSnippet(selectedRecord.snippet) : null);
+    setEditingMediaId(null);
   }, [selectedPath, selectedRecord]);
 
-  const filtered = records.filter((record) => {
-    const haystack = [
-      record.snippet.title,
-      record.snippet.feat ?? "",
-      record.snippet.prod,
-      record.snippet.date,
-    ]
-      .join(" ")
-      .toLowerCase();
-    return haystack.includes(deferredQuery.trim().toLowerCase());
-  });
+  const filtered = useMemo(
+    () =>
+      records.filter((record) => {
+        const haystack = [
+          record.snippet.title,
+          record.snippet.feat ?? "",
+          record.snippet.prod,
+          record.snippet.date,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(deferredQuery.trim().toLowerCase());
+      }),
+    [deferredQuery, records]
+  );
 
-  const onSave = async () => {
+  const saveDraft = async () => {
     if (!selectedRecord || !draft) return;
     setSaving(true);
     setError(null);
@@ -103,7 +140,14 @@ export default function SnippetLibrary() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           path: selectedRecord.path,
-          ...draft,
+          title: draft.title,
+          titleConfirmed: draft.titleConfirmed,
+          feat: draft.feat,
+          prod: draft.prod,
+          prodConfirmed: draft.prodConfirmed,
+          date: draft.date,
+          released: draft.released,
+          media: draft.media,
         }),
       });
       const data = (await res.json()) as { error?: string; snippet?: Snippet };
@@ -118,12 +162,101 @@ export default function SnippetLibrary() {
         )
       );
       setDraft(draftFromSnippet(data.snippet));
+      setEditingMediaId(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save snippet");
     } finally {
       setSaving(false);
     }
   };
+
+  const deleteSelected = async () => {
+    if (!selectedRecord) return;
+    if (!window.confirm(`Delete ${selectedRecord.snippet.title}?`)) {
+      return;
+    }
+    setDeleting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/snippets", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: selectedRecord.path }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Could not delete snippet");
+      }
+      setRecords((current) => current.filter((record) => record.path !== selectedRecord.path));
+      const remaining = filtered.filter((record) => record.path !== selectedRecord.path);
+      setSelectedPath(remaining[0]?.path ?? "");
+      setDraft(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not delete snippet");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const updateMedia = (id: string, patch: Partial<MediaDraft>) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            media: current.media.map((item) =>
+              item.id === id ? { ...item, ...patch } : item
+            ),
+          }
+        : current
+    );
+  };
+
+  const removeMedia = (id: string) => {
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            media: current.media.filter((item) => item.id !== id),
+          }
+        : current
+    );
+    setEditingMediaId((current) => (current === id ? null : current));
+  };
+
+  const addMedia = () => {
+    const id =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `media-${Date.now()}`;
+    setDraft((current) =>
+      current
+        ? {
+            ...current,
+            media: [
+              ...current.media,
+              { id, untaggedUrl: "", taggedUrl: "" },
+            ],
+          }
+        : current
+    );
+    setEditingMediaId(id);
+  };
+
+  const moveMedia = (dragId: string, hoverId: string) => {
+    if (dragId === hoverId) return;
+    setDraft((current) => {
+      if (!current) return current;
+      const from = current.media.findIndex((item) => item.id === dragId);
+      const to = current.media.findIndex((item) => item.id === hoverId);
+      if (from < 0 || to < 0) return current;
+      const next = [...current.media];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return { ...current, media: next };
+    });
+  };
+
+  const activeMedia = draft?.media.find((item) => item.id === editingMediaId) ?? null;
 
   return (
     <section className="snippet-library panel">
@@ -143,9 +276,7 @@ export default function SnippetLibrary() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search title, feat, prod, date"
         />
-        <div className="library-toolbar-note">
-          {filtered.length} snippet{filtered.length === 1 ? "" : "s"}
-        </div>
+        <div className="library-toolbar-note">{snippetCountLabel(filtered.length)}</div>
       </div>
 
       {error && <div className="banner-error">{error}</div>}
@@ -170,13 +301,13 @@ export default function SnippetLibrary() {
                   <div className="library-card-head">
                     <div>
                       <div className="library-card-title">
-                        <span>{displayTitle(record.snippet)}</span>
+                        {renderTitle(record.snippet)}
                       </div>
                       <div className="subtle">{record.snippet.prod}</div>
                     </div>
                     <span
                       className={`badge library-status-badge ${
-                        record.snippet.released ? "badge-done" : "badge-pending"
+                        record.snippet.released ? "badge-done" : "badge-posting"
                       }`}
                     >
                       {record.snippet.released ? "Released" : "Unreleased"}
@@ -184,7 +315,7 @@ export default function SnippetLibrary() {
                   </div>
                   <div className="library-card-meta">
                     <span>{record.snippet.date}</span>
-                    <span>{record.snippet.untagged_media.length} snippets</span>
+                    <span>{snippetCountLabel(record.snippet.untagged_media.length)}</span>
                   </div>
                 </button>
               );
@@ -202,16 +333,26 @@ export default function SnippetLibrary() {
               <div className="library-editor-head">
                 <div>
                   <p className="library-kicker">editing</p>
-                  <h3>{selectedRecord.snippet.title}</h3>
+                  <h3>{renderTitle(draft)}</h3>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={saving}
-                  onClick={() => void onSave()}
-                >
-                  {saving ? "Saving…" : "Save changes"}
-                </button>
+                <div className="library-editor-actions">
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    disabled={deleting || saving}
+                    onClick={() => void deleteSelected()}
+                  >
+                    {deleting ? "Deleting…" : "Delete snippet"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={saving || deleting}
+                    onClick={() => void saveDraft()}
+                  >
+                    {saving ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
               </div>
 
               <div className="library-form-grid">
@@ -307,36 +448,144 @@ export default function SnippetLibrary() {
                 </label>
               </div>
 
-              <div className="library-media-grid">
-                <div className="library-media-panel">
-                  <h4>Untagged media</h4>
-                  <div className="library-links">
-                    {selectedRecord.snippet.untagged_media.map((url) => (
-                      <a key={url} href={url} target="_blank" rel="noreferrer">
-                        {url}
-                      </a>
-                    ))}
-                  </div>
+              <div className="library-media-header">
+                <div>
+                  <h4 className="library-media-title">Media grid</h4>
+                  <p className="subtle">
+                    Five embeds fit in one Discord message. If this grid pushes a
+                    snippet over that limit, the panel rebuilds that snippet and the
+                    following tail so overflow messages stay in the right spot.
+                  </p>
                 </div>
-                <div className="library-media-panel">
-                  <h4>Tagged media</h4>
-                  <div className="library-links">
-                    {selectedRecord.snippet.tagged_media.length > 0 ? (
-                      selectedRecord.snippet.tagged_media.map((url) => (
-                        <a key={url} href={url} target="_blank" rel="noreferrer">
-                          {url}
-                        </a>
-                      ))
-                    ) : (
-                      <p className="subtle">No tagged media yet.</p>
-                    )}
-                  </div>
-                </div>
+                <button type="button" className="btn btn-ghost" onClick={addMedia}>
+                  Add media
+                </button>
               </div>
+
+              <div className="library-media-grid library-media-cards">
+                {draft.media.map((media, index) => (
+                  <div
+                    key={media.id}
+                    className={`library-video-card${
+                      editingMediaId === media.id ? " active" : ""
+                    }`}
+                    draggable
+                    onDragStart={() => setDraggingMediaId(media.id)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      if (draggingMediaId) {
+                        moveMedia(draggingMediaId, media.id);
+                      }
+                    }}
+                    onDragEnd={() => setDraggingMediaId(null)}
+                    onDrop={() => setDraggingMediaId(null)}
+                  >
+                    <button
+                      type="button"
+                      className="library-video-preview"
+                      onClick={() => setPreviewUrl(media.untaggedUrl)}
+                    >
+                      {media.untaggedUrl ? (
+                        <video
+                          src={media.untaggedUrl}
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <div className="library-video-placeholder">Add an untagged URL</div>
+                      )}
+                      <span className="library-video-chip">#{index + 1}</span>
+                    </button>
+                    <div className="library-video-actions">
+                      <span className="library-drag-handle">Drag</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() =>
+                          setEditingMediaId((current) =>
+                            current === media.id ? null : media.id
+                          )
+                        }
+                      >
+                        Edit
+                      </button>
+                    </div>
+                    {editingMediaId === media.id ? (
+                      <div className="library-url-editor">
+                        <label className="field-label">Untagged URL</label>
+                        <input
+                          type="text"
+                          value={media.untaggedUrl}
+                          onChange={(e) =>
+                            updateMedia(media.id, { untaggedUrl: e.target.value })
+                          }
+                        />
+                        <label className="field-label">Tagged URL</label>
+                        <input
+                          type="text"
+                          value={media.taggedUrl}
+                          onChange={(e) =>
+                            updateMedia(media.id, { taggedUrl: e.target.value })
+                          }
+                        />
+                        <div className="library-url-actions">
+                          <button
+                            type="button"
+                            className="btn btn-ghost"
+                            onClick={() => removeMedia(media.id)}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              {!draft.media.length ? (
+                <p className="subtle" style={{ marginTop: "1rem" }}>
+                  Add at least one media pair to keep the snippet live in Discord.
+                </p>
+              ) : null}
+
+              <p className="subtle" style={{ margin: "1rem 0 0" }}>
+                Saves update the repo snippet, keep private/public media order in sync,
+                and rebuild downstream messages automatically when overflow changes.
+              </p>
             </>
           )}
         </div>
       </div>
+
+      {previewUrl ? (
+        <div className="modal-backdrop" onClick={() => setPreviewUrl(null)}>
+          <div
+            className="panel modal library-preview-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="row-between" style={{ marginBottom: "0.75rem" }}>
+              <h2>Preview</h2>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                style={{ padding: "0.35rem 0.65rem" }}
+                onClick={() => setPreviewUrl(null)}
+              >
+                Close
+              </button>
+            </div>
+            <video
+              src={previewUrl}
+              className="library-preview-player"
+              controls
+              autoPlay
+              playsInline
+            />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

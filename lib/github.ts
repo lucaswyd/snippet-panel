@@ -261,6 +261,22 @@ export async function createOrUpdateSnippetFile(
   });
 }
 
+export async function deleteSnippetFile(
+  octokit: Octokit,
+  path: string,
+  message: string
+): Promise<void> {
+  const cur = await getFileContentOptional(octokit, path);
+  if (!cur) return;
+  await octokit.rest.repos.deleteFile({
+    owner: owner(),
+    repo: repo(),
+    path,
+    message,
+    sha: cur.sha,
+  });
+}
+
 const REPOST_JOB_PATH = "state/repost-job.json";
 
 /**

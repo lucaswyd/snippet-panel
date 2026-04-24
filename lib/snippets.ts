@@ -152,11 +152,11 @@ function buildSnippetMessagesWithUrls(s: Snippet, urls: string[]): string[] {
   const preview = formatDateMMDDYY(s.date);
   const statusWord = s.released ? "Released" : "Unreleased";
   const statusPrefix = `**Status:** ${statusWord}`;
-
-  const head = `${buildTitleLine(s)}\n${buildProdLine(s)}\n\n**First Previewed:** ${preview}`;
+  const titleLine = buildTitleLine(s);
+  const metaBlock = `${buildProdLine(s)}\n**First Previewed:** ${preview}\n${statusPrefix}`;
 
   if (urls.length === 0) {
-    return [`${head}\n${statusPrefix}`];
+    return [`${titleLine}\n${metaBlock}`];
   }
 
   const linkChunks: string[][] = [];
@@ -166,7 +166,7 @@ function buildSnippetMessagesWithUrls(s: Snippet, urls: string[]): string[] {
 
   const messages: string[] = [];
   const firstLinks = linkChunks[0].join(" ");
-  messages.push(`${head}\n${statusPrefix} ${firstLinks}`);
+  messages.push(`${titleLine}\n${firstLinks}\n${metaBlock}`);
 
   for (let c = 1; c < linkChunks.length; c++) {
     messages.push(linkChunks[c].join(" "));
