@@ -123,7 +123,7 @@ export default function SnippetLibrary() {
       <div className="library-hero">
         <div>
           <p className="library-kicker">Snippet Archive</p>
-          <h2 className="library-title">Edit private and public copies in one place</h2>
+          <h2 className="library-title">Library</h2>
         </div>
         <button type="button" className="btn btn-ghost" onClick={() => void load()}>
           Refresh
@@ -198,7 +198,7 @@ export default function SnippetLibrary() {
             <>
               <div className="library-editor-head">
                 <div>
-                  <p className="library-kicker">Live Editor</p>
+                  <p className="library-kicker">editing</p>
                   <h3>{selectedRecord.snippet.title}</h3>
                 </div>
                 <button
@@ -330,11 +330,6 @@ export default function SnippetLibrary() {
                   </div>
                 </div>
               </div>
-
-              <p className="subtle" style={{ margin: 0 }}>
-                Saves update the repo snippet and live-edit the posted private/public
-                webhook messages when they already exist.
-              </p>
             </>
           )}
         </div>
