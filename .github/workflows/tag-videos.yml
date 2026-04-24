@@ -83,6 +83,8 @@ jobs:
 
           echo "Processing $FILE"
 
+          BASE="${VERCEL_APP_URL%/}"
+
           QUEUE_ID=$(jq -r '._queueId // empty' "$FILE")
           TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
           UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
