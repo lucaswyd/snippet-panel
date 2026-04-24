@@ -19,7 +19,7 @@ jobs:
       - name: Checkout snippets repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.GITHUB_SNIPPETS_REPO_OWNER }}/${{ secrets.GITHUB_SNIPPETS_REPO_NAME }}
+          repository: ${{ github.repository_owner }}/${{ secrets.SNIPPETS_REPO_NAME }}
           token: ${{ secrets.GH_PAT }}
           fetch-depth: 2
 
@@ -59,8 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-          GITHUB_SNIPPETS_REPO_OWNER: ${{ secrets.GITHUB_SNIPPETS_REPO_OWNER }}
-          GITHUB_SNIPPETS_REPO_NAME: ${{ secrets.GITHUB_SNIPPETS_REPO_NAME }}
+          SNIPPETS_REPO_NAME: ${{ secrets.SNIPPETS_REPO_NAME }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOK_PUBLIC_SNIPPETS: ${{ secrets.WEBHOOK_PUBLIC_SNIPPETS }}
           WEBHOOK_PRIVATE_SNIPPETS: ${{ secrets.WEBHOOK_PRIVATE_SNIPPETS }}
