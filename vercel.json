@@ -12,6 +12,5 @@
     "pages/api/repost-start.ts": { "maxDuration": 60 },
     "pages/api/repost-status.ts": { "maxDuration": 15 },
     "pages/api/announce.ts": { "maxDuration": 60 }
-  },
-  "ignoreCommand": "sh -c 'git diff --name-only HEAD^..HEAD | grep -v \"^state/\" || exit 0'"
+  }
 }

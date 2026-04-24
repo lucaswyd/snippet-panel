@@ -20,7 +20,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-          fetch-depth: 2
+
+      - name: Checkout snippets repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.GITHUB_SNIPPETS_REPO_OWNER }}/${{ secrets.GITHUB_SNIPPETS_REPO_NAME }}
+          token: ${{ secrets.GH_PAT }}
+          path: snippets-repo
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -52,13 +58,13 @@ jobs:
 
       - name: Process snippet
         env:
-          SNIPPET_PATH: ${{ github.event.client_payload.snippetPath }}
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
-          SNIPPETS_REPO_NAME: ${{ secrets.SNIPPETS_REPO_NAME }}
+          GITHUB_SNIPPETS_REPO_OWNER: ${{ secrets.GITHUB_SNIPPETS_REPO_OWNER }}
+          GITHUB_SNIPPETS_REPO_NAME: ${{ secrets.GITHUB_SNIPPETS_REPO_NAME }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOK_PUBLIC_SNIPPETS: ${{ secrets.WEBHOOK_PUBLIC_SNIPPETS }}
           WEBHOOK_PRIVATE_SNIPPETS: ${{ secrets.WEBHOOK_PRIVATE_SNIPPETS }}
@@ -73,62 +79,32 @@ jobs:
 
           FONT="/tmp/fonts/SFPRODISPLAYMEDIUM.OTF"
 
-          # Download snippet file from snippets repo via GitHub API
-          SNIPPET_PATH_ENCODED=$(echo "$SNIPPET_PATH" | jq -sRr @uri)
-          SNIPPET_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
+          # Get snippet path from dispatch payload
+          SNIPPET_PATH=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.snippetPath // empty')
+          QUEUE_ID=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.queueId // empty')
+          IS_NEW_SNIPPET=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.isNew // false')
+          PING_NEW_SNIPPET=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.pingNewSnippet // false')
 
-          # Retry with delay to handle timing issues
-          MAX_ATTEMPTS=10
-          ATTEMPT=0
-          HTTP_CODE=404
-
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
-            HTTP_CODE=$(curl -fsSL -o /dev/null -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
-
-            if [ "$HTTP_CODE" = "200" ]; then
-              break
-            fi
-
-            ATTEMPT=$((ATTEMPT+1))
-            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
-              echo "File not ready (attempt $ATTEMPT/$MAX_ATTEMPTS), retrying in 2s..."
-              sleep 2
-            fi
-          done
-
-          if [ "$HTTP_CODE" != "200" ]; then
-            echo "Snippet file not found after $MAX_ATTEMPTS attempts: $SNIPPET_PATH"
+          if [ -z "$SNIPPET_PATH" ] || [ -z "$QUEUE_ID" ]; then
+            echo "ERROR: Missing snippetPath or queueId in payload"
             exit 1
           fi
 
-          SNIPPET_CONTENT=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
-          SNIPPET_BASE64=$(echo "$SNIPPET_CONTENT" | jq -r '.content')
-          SNIPPET_JSON=$(echo "$SNIPPET_BASE64" | base64 -d)
-          echo "$SNIPPET_JSON" > /tmp/snippet.json
-          FILE="/tmp/snippet.json"
-          SNIPPET_SHA=$(echo "$SNIPPET_CONTENT" | jq -r '.sha // empty')
+          # Path to snippet file in snippets repo checkout
+          FILE="snippets-repo/${SNIPPET_PATH}"
+
+          if [ ! -f "$FILE" ]; then
+            echo "ERROR: Snippet file not found at $FILE"
+            exit 1
+          fi
 
           echo "Processing $FILE"
 
-          BASE="${VERCEL_APP_URL%/}"
-
-          QUEUE_ID=$(jq -r '._queueId // empty' "$FILE")
           TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
           UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
           SNIPPET_TITLE=$(jq -r '.title // "Untitled"' "$FILE")
           SAFE_TITLE=$(printf '%s' "$SNIPPET_TITLE" | tr '\n' ' ' | sed 's/[\\/:*?"<>|]/ /g; s/[[:space:]]\+/ /g; s/^ *//; s/ *$//')
           [ -n "$SAFE_TITLE" ] || SAFE_TITLE="Untitled"
-          IS_NEW_SNIPPET="false"
-          PING_NEW_SNIPPET="false"
-          if [ -f state/queue.json ]; then
-            IS_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].isNew // false' state/queue.json)
-            PING_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].pingNewSnippet // false' state/queue.json)
-          fi
-
-          if [ -z "$QUEUE_ID" ] || [ "$QUEUE_ID" = "null" ]; then
-            echo "Skip: no _queueId"
-            exit 0
-          fi
 
           if [ "$TAGGED_LEN" -gt 0 ]; then
             echo "Skip: already tagged"
@@ -161,6 +137,10 @@ jobs:
           export FULL_POST_CLIENT_PAYLOAD
           FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$SNIPPET_PATH" '{snippetPath: $p}')
           npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
+
+          cd snippets-repo
+          git pull --rebase origin main || true
+          cd ..
 
           TAG_URLS='[]'
           i=0
@@ -211,27 +191,13 @@ jobs:
           jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
           mv "${FILE}.tmp" "$FILE"
 
-          # Get current SHA from GitHub API to avoid conflicts
-          CURRENT_SNIPPET_CONTENT=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
-          CURRENT_SHA=$(echo "$CURRENT_SNIPPET_CONTENT" | jq -r '.sha // empty')
-
-          # Upload updated snippet file to snippets repo via GitHub API
-          UPDATED_CONTENT=$(base64 -w 0 "$FILE")
-          UPDATE_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
-
-          if [ -z "$CURRENT_SHA" ] || [ "$CURRENT_SHA" = "null" ]; then
-            # File doesn't exist, create it
-            curl -fsSL -X PUT "${UPDATE_URL}" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "{\"message\":\"Tag media for ${SNIPPET_PATH}\",\"content\":\"${UPDATED_CONTENT}\"}"
-          else
-            # File exists, update it
-            curl -fsSL -X PUT "${UPDATE_URL}" \
-              -H "Authorization: token ${GITHUB_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "{\"message\":\"Tag media for ${SNIPPET_PATH}\",\"content\":\"${UPDATED_CONTENT}\",\"sha\":\"${CURRENT_SHA}\"}"
-          fi
+          cd snippets-repo
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add "$SNIPPET_PATH"
+          git commit -m "Tag media for ${SNIPPET_PATH}"
+          git push origin HEAD
+          cd ..
 
           curl -fsS -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \

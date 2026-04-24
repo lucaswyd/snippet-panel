@@ -111,11 +111,16 @@ export default async function handler(
   }
 
   try {
-    await triggerRepositoryDispatch("tag-videos", { snippetPath });
+    await triggerRepositoryDispatch("tag-videos", {
+      snippetPath,
+      queueId: id,
+      isNew: Boolean(body.isNew),
+      pingNewSnippet: Boolean(body.isNew && body.pingNewSnippet),
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to trigger tag-videos workflow";
-    console.error(msg);
-    // Don't fail the request if dispatch fails, the workflow can be triggered manually
+    await updateQueueItem(id, { status: "error", errorMessage: msg });
+    return res.status(500).json({ error: msg });
   }
 
   return res.status(200).json({ id, status: "tagging" });

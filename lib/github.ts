@@ -39,14 +39,14 @@ function repo(): string {
 }
 
 function snippetsOwner(): string {
-  const o = process.env.SNIPPETS_REPO_OWNER || process.env.GITHUB_REPO_OWNER;
-  if (!o) throw new Error("SNIPPETS_REPO_OWNER or GITHUB_REPO_OWNER is not set");
+  const o = process.env.GITHUB_SNIPPETS_REPO_OWNER;
+  if (!o) throw new Error("GITHUB_SNIPPETS_REPO_OWNER is not set");
   return o;
 }
 
 function snippetsRepo(): string {
-  const n = process.env.SNIPPETS_REPO_NAME;
-  if (!n) throw new Error("SNIPPETS_REPO_NAME is not set");
+  const n = process.env.GITHUB_SNIPPETS_REPO_NAME;
+  if (!n) throw new Error("GITHUB_SNIPPETS_REPO_NAME is not set");
   return n;
 }
 

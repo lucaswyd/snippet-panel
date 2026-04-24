@@ -418,14 +418,20 @@ export default async function handler(
           const msg =
             e instanceof Error ? e.message : "Could not save queue (filesystem)";
           await updateQueueItem(id, { status: "error", errorMessage: msg });
+          return res.status(500).json({ error: msg });
         }
 
         try {
-          await triggerRepositoryDispatch("tag-videos", { snippetPath: body.path });
+          await triggerRepositoryDispatch("tag-videos", {
+            snippetPath: body.path,
+            queueId: id,
+            isNew: false,
+            pingNewSnippet: false,
+          });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Failed to trigger tag-videos workflow";
-          console.error(msg);
-          // Don't fail the request if dispatch fails
+          await updateQueueItem(id, { status: "error", errorMessage: msg });
+          return res.status(500).json({ error: msg });
         }
       } else {
         // No new media - normal update with Discord sync
