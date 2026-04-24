@@ -122,7 +122,6 @@ export default function SnippetLibrary() {
     <section className="snippet-library panel">
       <div className="library-hero">
         <div>
-          <p className="library-kicker">Snippet Archive</p>
           <h2 className="library-title">Library</h2>
         </div>
         <button type="button" className="btn btn-ghost" onClick={() => void load()}>
