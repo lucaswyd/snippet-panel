@@ -74,7 +74,8 @@ jobs:
           FONT="/tmp/fonts/SFPRODISPLAYMEDIUM.OTF"
 
           # Download snippet file from snippets repo via GitHub API
-          SNIPPET_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH}"
+          SNIPPET_PATH_ENCODED=$(echo "$SNIPPET_PATH" | jq -sRr @uri)
+          SNIPPET_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
           SNIPPET_CONTENT=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
           SNIPPET_BASE64=$(echo "$SNIPPET_CONTENT" | jq -r '.content')
           SNIPPET_JSON=$(echo "$SNIPPET_BASE64" | base64 -d)
@@ -187,7 +188,7 @@ jobs:
           # Upload updated snippet file to snippets repo via GitHub API
           UPDATED_CONTENT=$(base64 -w 0 "$FILE")
           SNIPPET_SHA=$(echo "$SNIPPET_CONTENT" | jq -r '.sha')
-          UPDATE_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH}"
+          UPDATE_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
           curl -fsSL -X PUT "${UPDATE_URL}" \
             -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Content-Type: application/json" \
