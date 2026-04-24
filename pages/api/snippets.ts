@@ -23,6 +23,7 @@ import {
   writeSnippetMessageIds,
 } from "@/lib/snippets";
 import { pushQueueItem, updateQueueItem } from "@/lib/queue";
+import { triggerRepositoryDispatch } from "@/lib/trigger-repository-dispatch";
 
 type SnippetRecord = {
   path: string;
@@ -417,6 +418,14 @@ export default async function handler(
           const msg =
             e instanceof Error ? e.message : "Could not save queue (filesystem)";
           await updateQueueItem(id, { status: "error", errorMessage: msg });
+        }
+
+        try {
+          await triggerRepositoryDispatch("tag-videos", { snippetPath: body.path });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "Failed to trigger tag-videos workflow";
+          console.error(msg);
+          // Don't fail the request if dispatch fails
         }
       } else {
         // No new media - normal update with Discord sync

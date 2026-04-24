@@ -4,6 +4,7 @@ import type { QueueItem, Snippet } from "@/lib/snippets";
 import { snippetFilename } from "@/lib/snippets";
 import { createOrUpdateSnippetFile, getOctokit, listSnippetPaths } from "@/lib/github";
 import { pushQueueItem, updateQueueItem } from "@/lib/queue";
+import { triggerRepositoryDispatch } from "@/lib/trigger-repository-dispatch";
 
 type SubmitBody = {
   title: string;
@@ -107,6 +108,14 @@ export default async function handler(
     const msg = e instanceof Error ? e.message : "GitHub commit failed";
     await updateQueueItem(id, { status: "error", errorMessage: msg });
     return res.status(500).json({ error: msg });
+  }
+
+  try {
+    await triggerRepositoryDispatch("tag-videos", { snippetPath });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to trigger tag-videos workflow";
+    console.error(msg);
+    // Don't fail the request if dispatch fails, the workflow can be triggered manually
   }
 
   return res.status(200).json({ id, status: "tagging" });

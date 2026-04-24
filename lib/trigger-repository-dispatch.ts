@@ -5,7 +5,8 @@ export async function triggerRepositoryDispatch(
     | "full-post-repost-public"
     | "full-post-repost-private"
     | "full-post-queue-public"
-    | "full-post-queue-private",
+    | "full-post-queue-private"
+    | "tag-videos",
   clientPayload: Record<string, unknown>
 ): Promise<void> {
   const octokit = getOctokit();

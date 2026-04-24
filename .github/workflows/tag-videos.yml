@@ -1,9 +1,9 @@
 name: Tag videos
 
 on:
-  push:
-    paths:
-      - "snippets/*.json"
+  repository_dispatch:
+    types:
+      - tag-videos
 
 defaults:
   run:
@@ -14,14 +14,14 @@ permissions:
 
 jobs:
   tag:
-    if: ${{ !startsWith(github.event.head_commit.message, 'messageId ') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout snippets repo
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          repository: ${{ secrets.GITHUB_SNIPPETS_REPO_OWNER }}/${{ secrets.GITHUB_SNIPPETS_REPO_NAME }}
           token: ${{ secrets.GH_PAT }}
+          fetch-depth: 2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -51,8 +51,9 @@ jobs:
           mkdir -p /tmp/fonts
           cp assets/fonts/SFPRODISPLAYMEDIUM.OTF /tmp/fonts/SFPRODISPLAYMEDIUM.OTF
 
-      - name: Process changed snippets
+      - name: Process snippet
         env:
+          SNIPPET_PATH: ${{ github.event.client_payload.snippetPath }}
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           VERCEL_APP_URL: ${{ secrets.VERCEL_APP_URL }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
@@ -74,142 +75,131 @@ jobs:
 
           FONT="/tmp/fonts/SFPRODISPLAYMEDIUM.OTF"
 
-          if ! git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
-            CHANGED=$(git show --name-only --pretty="" HEAD -- 'snippets/*.json' || true)
-          else
-            CHANGED=$(git diff --name-only HEAD~1 HEAD -- 'snippets/*.json' || true)
+          FILE="${SNIPPET_PATH}"
+          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+            echo "Snippet file not found: $FILE"
+            exit 1
           fi
 
-          if [ -z "${CHANGED// }" ]; then
-            echo "No snippet JSON changes"
+          echo "Processing $FILE"
+
+          QUEUE_ID=$(jq -r '._queueId // empty' "$FILE")
+          TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
+          UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
+          SNIPPET_TITLE=$(jq -r '.title // "Untitled"' "$FILE")
+          SAFE_TITLE=$(printf '%s' "$SNIPPET_TITLE" | tr '\n' ' ' | sed 's/[\\/:*?"<>|]/ /g; s/[[:space:]]\+/ /g; s/^ *//; s/ *$//')
+          [ -n "$SAFE_TITLE" ] || SAFE_TITLE="Untitled"
+          IS_NEW_SNIPPET="false"
+          PING_NEW_SNIPPET="false"
+          if [ -f state/queue.json ]; then
+            IS_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].isNew // false' state/queue.json)
+            PING_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].pingNewSnippet // false' state/queue.json)
+          fi
+
+          if [ -z "$QUEUE_ID" ] || [ "$QUEUE_ID" = "null" ]; then
+            echo "Skip: no _queueId"
             exit 0
           fi
 
-          while IFS= read -r FILE; do
-            [ -z "$FILE" ] && continue
-            [ -f "$FILE" ] || continue
+          if [ "$TAGGED_LEN" -gt 0 ]; then
+            echo "Skip: already tagged"
+            exit 0
+          fi
 
-            echo "Processing $FILE"
+          if [ "$UNTAG_LEN" -eq 0 ]; then
+            echo "Skip: no untagged_media"
+            exit 0
+          fi
 
-            QUEUE_ID=$(jq -r '._queueId // empty' "$FILE")
-            TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
-            UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
-            SNIPPET_TITLE=$(jq -r '.title // "Untitled"' "$FILE")
-            SAFE_TITLE=$(printf '%s' "$SNIPPET_TITLE" | tr '\n' ' ' | sed 's/[\\/:*?"<>|]/ /g; s/[[:space:]]\+/ /g; s/^ *//; s/ *$//')
-            [ -n "$SAFE_TITLE" ] || SAFE_TITLE="Untitled"
-            IS_NEW_SNIPPET="false"
-            PING_NEW_SNIPPET="false"
-            if [ -f state/queue.json ]; then
-              IS_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].isNew // false' state/queue.json)
-              PING_NEW_SNIPPET=$(jq -r --arg id "$QUEUE_ID" 'map(select(.id == $id))[0].pingNewSnippet // false' state/queue.json)
-            fi
+          BASE="${VERCEL_APP_URL%/}"
 
-            if [ -z "$QUEUE_ID" ] || [ "$QUEUE_ID" = "null" ]; then
-              echo "Skip: no _queueId"
-              continue
-            fi
-
-            if [ "$TAGGED_LEN" -gt 0 ]; then
-              echo "Skip: already tagged"
-              continue
-            fi
-
-            if [ "$UNTAG_LEN" -eq 0 ]; then
-              echo "Skip: no untagged_media"
-              continue
-            fi
-
-            BASE="${VERCEL_APP_URL%/}"
-
-            fail_job() {
-              local msg="$1"
-              echo "ERROR: $msg"
-              curl -fsS -X POST "${BASE}/api/internal-post-complete" \
-                -H "Content-Type: application/json" \
-                -H "x-internal-secret: ${CALLBACK_SECRET}" \
-                -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":false,\"errorMessage\":\"$msg\"}" || true
-              exit 1
-            }
-
-            curl -fsS -X POST "${BASE}/api/internal-queue-status" \
-              -H "Content-Type: application/json" \
-              -H "x-internal-secret: ${CALLBACK_SECRET}" \
-              -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_private\"}"
-
-            export FULL_POST_ACTION="full-post-queue-private"
-            export FULL_POST_CLIENT_PAYLOAD
-            FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" '{snippetPath: $p}')
-            npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
-
-            git pull --rebase origin main || true
-
-            TAG_URLS='[]'
-            i=0
-
-            while IFS= read -r URL; do
-              [ -z "$URL" ] && continue
-              i=$((i+1))
-
-              OUT_EXT="mp4"
-              RAW="snippet_${i}_raw.${OUT_EXT}"
-              OUT="${SAFE_TITLE} (Snippet ${i}).${OUT_EXT}"
-
-              curl -fsSL "$URL" -o "$RAW"
-
-              FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
-
-              ffmpeg -y -i "$RAW" \
-                -map 0:v:0 -map 0:a:0? \
-                -dn -sn \
-                -map_metadata -1 -map_chapters -1 \
-                -vf "$FILTER" \
-                -c:v libx264 -pix_fmt yuv420p \
-                -profile:v high -level:v 4.1 \
-                -movflags +faststart \
-                -brand mp42 \
-                -video_track_timescale 30000 \
-                -c:a aac -b:a 128k -ar 48000 -ac 2 \
-                "$OUT"
-              PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,pix_fmt -of json "$OUT")
-              echo "$PROBE"
-              echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
-              echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
-              echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
-              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
-              TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
-
-              if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
-                echo "fast-file upload failed for $FILE"
-                exit 1
-              fi
-
-              DL="https://fast-file.com/${TITLE}/download"
-              TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
-
-              rm -f "$RAW" "$OUT"
-            done < <(jq -r '.untagged_media[]' "$FILE")
-
-            jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
-            mv "${FILE}.tmp" "$FILE"
-
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git config user.name "github-actions[bot]"
-            git add "$FILE"
-            git commit -m "Tag media for ${FILE}"
-            git push origin HEAD
-
-            curl -fsS -X POST "${BASE}/api/internal-queue-status" \
-              -H "Content-Type: application/json" \
-              -H "x-internal-secret: ${CALLBACK_SECRET}" \
-              -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
-
-            export FULL_POST_ACTION="full-post-queue-public"
-            FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" --argjson isNew "$IS_NEW_SNIPPET" --argjson ping "$PING_NEW_SNIPPET" '{snippetPath: $p, taggedMediaUrls: $t, isNew: $isNew, pingNewSnippet: $ping}')
-            npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
-
+          fail_job() {
+            local msg="$1"
+            echo "ERROR: $msg"
             curl -fsS -X POST "${BASE}/api/internal-post-complete" \
               -H "Content-Type: application/json" \
               -H "x-internal-secret: ${CALLBACK_SECRET}" \
-              -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
+              -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":false,\"errorMessage\":\"$msg\"}" || true
+            exit 1
+          }
 
-          done <<< "$CHANGED"
+          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_private\"}"
+
+          export FULL_POST_ACTION="full-post-queue-private"
+          export FULL_POST_CLIENT_PAYLOAD
+          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" '{snippetPath: $p}')
+          npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
+
+          git pull --rebase origin main || true
+
+          TAG_URLS='[]'
+          i=0
+
+          while IFS= read -r URL; do
+            [ -z "$URL" ] && continue
+            i=$((i+1))
+
+            OUT_EXT="mp4"
+            RAW="snippet_${i}_raw.${OUT_EXT}"
+            OUT="${SAFE_TITLE} (Snippet ${i}).${OUT_EXT}"
+
+            curl -fsSL "$URL" -o "$RAW"
+
+            FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
+
+            ffmpeg -y -i "$RAW" \
+              -map 0:v:0 -map 0:a:0? \
+              -dn -sn \
+              -map_metadata -1 -map_chapters -1 \
+              -vf "$FILTER" \
+              -c:v libx264 -pix_fmt yuv420p \
+              -profile:v high -level:v 4.1 \
+              -movflags +faststart \
+              -brand mp42 \
+              -video_track_timescale 30000 \
+              -c:a aac -b:a 128k -ar 48000 -ac 2 \
+              "$OUT"
+            PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,pix_fmt -of json "$OUT")
+            echo "$PROBE"
+            echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
+            echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
+            echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
+            RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
+            TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
+
+            if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
+              echo "fast-file upload failed for $FILE"
+              exit 1
+            fi
+
+            DL="https://fast-file.com/${TITLE}/download"
+            TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
+
+            rm -f "$RAW" "$OUT"
+          done < <(jq -r '.untagged_media[]' "$FILE")
+
+          jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
+          mv "${FILE}.tmp" "$FILE"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add "$FILE"
+          git commit -m "Tag media for ${FILE}"
+          git push origin HEAD
+
+          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
+
+          export FULL_POST_ACTION="full-post-queue-public"
+          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" --argjson isNew "$IS_NEW_SNIPPET" --argjson ping "$PING_NEW_SNIPPET" '{snippetPath: $p, taggedMediaUrls: $t, isNew: $isNew, pingNewSnippet: $ping}')
+          npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
+
+          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
