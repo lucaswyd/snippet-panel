@@ -484,15 +484,14 @@ textarea:focus {
   display: grid;
   grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.3fr);
   gap: 1.25rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .library-list {
   display: grid;
   gap: 0.8rem;
-  max-height: 72vh;
-  overflow: auto;
   padding-right: 0.25rem;
+  align-content: start;
 }
 
 .library-card {
@@ -575,12 +574,10 @@ textarea:focus {
   position: relative;
   width: 100%;
   aspect-ratio: 9 / 16;
-  border: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
   overflow: hidden;
-  padding: 0;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.25));
-  cursor: pointer;
 }
 
 .library-video-preview video {
@@ -588,6 +585,7 @@ textarea:focus {
   height: 100%;
   object-fit: cover;
   display: block;
+  background: #000;
 }
 
 .library-video-placeholder {
@@ -636,17 +634,6 @@ textarea:focus {
   display: flex;
   justify-content: flex-end;
   margin-top: 0.15rem;
-}
-
-.library-preview-modal {
-  width: min(460px, 100%);
-}
-
-.library-preview-player {
-  width: 100%;
-  border-radius: 14px;
-  display: block;
-  background: #000;
 }
 
 .library-card-meta {

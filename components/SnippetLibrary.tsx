@@ -74,7 +74,6 @@ export default function SnippetLibrary() {
   const [error, setError] = useState<string | null>(null);
   const [editingMediaId, setEditingMediaId] = useState<string | null>(null);
   const [draggingMediaId, setDraggingMediaId] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
 
   const load = async () => {
@@ -255,8 +254,6 @@ export default function SnippetLibrary() {
       return { ...current, media: next };
     });
   };
-
-  const activeMedia = draft?.media.find((item) => item.id === editingMediaId) ?? null;
 
   return (
     <section className="snippet-library panel">
@@ -475,15 +472,11 @@ export default function SnippetLibrary() {
                     onDragEnd={() => setDraggingMediaId(null)}
                     onDrop={() => setDraggingMediaId(null)}
                   >
-                    <button
-                      type="button"
-                      className="library-video-preview"
-                      onClick={() => setPreviewUrl(media.untaggedUrl)}
-                    >
+                    <div className="library-video-preview">
                       {media.untaggedUrl ? (
                         <video
                           src={media.untaggedUrl}
-                          muted
+                          controls
                           playsInline
                           preload="metadata"
                         />
@@ -491,7 +484,7 @@ export default function SnippetLibrary() {
                         <div className="library-video-placeholder">Add an untagged URL</div>
                       )}
                       <span className="library-video-chip">#{index + 1}</span>
-                    </button>
+                    </div>
                     <div className="library-video-actions">
                       <span className="library-drag-handle">Drag</span>
                       <button
@@ -548,34 +541,6 @@ export default function SnippetLibrary() {
           )}
         </div>
       </div>
-
-      {previewUrl ? (
-        <div className="modal-backdrop" onClick={() => setPreviewUrl(null)}>
-          <div
-            className="panel modal library-preview-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="row-between" style={{ marginBottom: "0.75rem" }}>
-              <h2>Preview</h2>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                style={{ padding: "0.35rem 0.65rem" }}
-                onClick={() => setPreviewUrl(null)}
-              >
-                Close
-              </button>
-            </div>
-            <video
-              src={previewUrl}
-              className="library-preview-player"
-              controls
-              autoPlay
-              playsInline
-            />
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
