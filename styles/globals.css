@@ -419,6 +419,31 @@ textarea:focus {
   transition: width 0.2s;
 }
 
+.input-mode-toggle {
+  display: inline-flex;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.input-mode-pill {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  cursor: pointer;
+}
+
+.input-mode-pill.active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(124, 108, 240, 0.92), rgba(90, 79, 207, 0.88));
+}
+
 .page-switcher {
   display: inline-flex;
   gap: 0.35rem;
@@ -451,6 +476,10 @@ textarea:focus {
 .snippet-library {
   padding: 1.5rem;
   animation: rise-in 260ms ease;
+}
+
+.library-mobile-viewport {
+  overflow: hidden;
 }
 
 .library-hero,
@@ -532,6 +561,18 @@ textarea:focus {
   animation: none;
 }
 
+.library-mobile-back {
+  display: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0;
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
 .library-editor-actions {
   display: flex;
   align-items: center;
@@ -602,11 +643,20 @@ textarea:focus {
   position: absolute;
   top: 0.65rem;
   right: 0.65rem;
+  border: none;
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
   font-size: 0.75rem;
+}
+
+.library-swap-chip {
+  cursor: pointer;
+}
+
+.library-swap-chip.active {
+  background: linear-gradient(135deg, rgba(124, 108, 240, 0.94), rgba(90, 79, 207, 0.92));
 }
 
 .library-video-actions {
@@ -724,16 +774,25 @@ textarea:focus {
 }
 
 @media (max-width: 960px) {
-  .library-grid,
   .library-form-grid,
   .library-media-grid {
     grid-template-columns: 1fr;
   }
 
+  .library-grid {
+    grid-template-columns: 100% 100%;
+    min-width: 200%;
+    transform: translateX(0);
+    transition: transform 240ms ease;
+  }
+
+  .library-grid.mobile-editor-active {
+    transform: translateX(-50%);
+  }
+
   .library-editor,
   .library-empty,
   .library-list {
-    max-height: none;
     min-height: 0;
   }
 
@@ -752,5 +811,9 @@ textarea:focus {
 
   .library-media-cards {
     grid-template-columns: 1fr;
+  }
+
+  .library-mobile-back {
+    display: inline-block;
   }
 }

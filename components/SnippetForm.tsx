@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
+import { uploadVideoFile } from "@/lib/browser-media-upload";
 import { snippetVideoFilename } from "@/lib/snippets";
 
 function todayISODate(): string {
@@ -18,22 +19,6 @@ type UploadRow = {
   error?: string;
 };
 
-/** Browser → fast-file directly (avoids Vercel ~4.5MB body limit on /api/upload). */
-const FAST_FILE_UPLOAD = "https://fast-file.com/upload";
-/** Only used if direct upload fails; must stay under Vercel serverless request limit. */
-const PROXY_MAX_BYTES = 4 * 1024 * 1024;
-
-function downloadUrlFromFastFileJson(text: string): string | undefined {
-  try {
-    const data = JSON.parse(text) as { files?: { title?: string }[] };
-    const title = data.files?.[0]?.title;
-    if (title) return `https://fast-file.com/${title}/download`;
-  } catch {
-    /* ignore */
-  }
-  return undefined;
-}
-
 export default function SnippetForm() {
   const [title, setTitle] = useState("");
   const [titleConfirmed, setTitleConfirmed] = useState(true);
@@ -44,7 +29,9 @@ export default function SnippetForm() {
   const [released, setReleased] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [pingNewSnippet, setPingNewSnippet] = useState(false);
+  const [mediaMode, setMediaMode] = useState<"files" | "urls">("files");
   const [uploads, setUploads] = useState<UploadRow[]>([]);
+  const [urlText, setUrlText] = useState("");
   const [discordBanner, setDiscordBanner] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -52,21 +39,18 @@ export default function SnippetForm() {
 
   const uploadOne = useCallback((file: File, uploadIndex: number) => {
     const originalExt = file.name.split(".").pop()?.trim().toLowerCase() || "mp4";
-    const renamed = new File(
-      [file],
-      snippetVideoFilename(title || "Untitled", uploadIndex, originalExt),
-      {
-        type: file.type || "video/mp4",
-        lastModified: file.lastModified,
-      }
+    const desiredName = snippetVideoFilename(
+      title || "Untitled",
+      uploadIndex,
+      originalExt
     );
     const id =
       typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
-        : `${renamed.name}-${Date.now()}`;
+        : `${desiredName}-${Date.now()}`;
     setUploads((u) => [
       ...u,
-      { id, name: renamed.name, size: renamed.size, progress: 0 },
+      { id, name: desiredName, size: file.size, progress: 0 },
     ]);
 
     const patchRow = (patch: Partial<UploadRow>) => {
@@ -75,105 +59,18 @@ export default function SnippetForm() {
       );
     };
 
-    const uploadViaVercelProxy = () => {
-      if (renamed.size > PROXY_MAX_BYTES) {
+    void uploadVideoFile(file, desiredName, (pct) => patchRow({ progress: pct })).then(
+      (result) => {
+        if (result.needsDiscordUpload) {
+          setDiscordBanner(true);
+        }
         patchRow({
-          error:
-            "Could not reach fast-file from the browser and file is too large for the server relay (~4MB). Try another network or upload via Discord.",
-          progress: 0,
+          progress: result.downloadUrl ? 100 : 0,
+          downloadUrl: result.downloadUrl,
+          error: result.error,
         });
-        return;
       }
-      const fd = new FormData();
-      fd.append("file", renamed);
-      const px = new XMLHttpRequest();
-      px.upload.addEventListener("progress", (ev) => {
-        if (!ev.lengthComputable) return;
-        const pct = Math.round((ev.loaded / ev.total) * 100);
-        patchRow({ progress: pct });
-      });
-      px.addEventListener("load", () => {
-        let data: { error?: string; files?: { downloadUrl?: string }[] } = {};
-        try {
-          data = JSON.parse(px.responseText) as typeof data;
-        } catch {
-          /* ignore */
-        }
-        if (px.status === 413) {
-          if (data.error === "DISCORD_UPLOAD_NEEDED") {
-            setDiscordBanner(true);
-            patchRow({
-              error: "Too large for fast-file",
-              progress: 0,
-            });
-          } else {
-            patchRow({
-              error:
-                "File too large for server upload. Direct browser upload should be used — try refreshing.",
-              progress: 0,
-            });
-          }
-          return;
-        }
-        if (px.status < 200 || px.status >= 300) {
-          patchRow({
-            error: data.error || "Upload failed",
-            progress: 0,
-          });
-          return;
-        }
-        const downloadUrl = data.files?.[0]?.downloadUrl;
-        patchRow({
-          progress: 100,
-          downloadUrl,
-          error: downloadUrl ? undefined : "Invalid response",
-        });
-      });
-      px.addEventListener("error", () => {
-        patchRow({ error: "Network error", progress: 0 });
-      });
-      px.open("POST", "/api/upload");
-      px.send(fd);
-    };
-
-    const fd = new FormData();
-    fd.append("files", renamed, renamed.name);
-
-    const xhr = new XMLHttpRequest();
-    xhr.upload.addEventListener("progress", (ev) => {
-      if (!ev.lengthComputable) return;
-      const pct = Math.round((ev.loaded / ev.total) * 100);
-      patchRow({ progress: pct });
-    });
-    xhr.addEventListener("load", () => {
-      if (xhr.status === 0) {
-        uploadViaVercelProxy();
-        return;
-      }
-      if (xhr.status === 413) {
-        setDiscordBanner(true);
-        patchRow({
-          error: "Too large for fast-file",
-          progress: 0,
-        });
-        return;
-      }
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const downloadUrl = downloadUrlFromFastFileJson(xhr.responseText);
-        if (downloadUrl) {
-          patchRow({ progress: 100, downloadUrl });
-          return;
-        }
-        uploadViaVercelProxy();
-        return;
-      }
-      uploadViaVercelProxy();
-    });
-    xhr.addEventListener("error", () => {
-      uploadViaVercelProxy();
-    });
-    xhr.open("POST", FAST_FILE_UPLOAD);
-    xhr.send(fd);
+    );
   }, [title]);
 
   const onFiles = useCallback(
@@ -197,15 +94,25 @@ export default function SnippetForm() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    const urls = uploads
-      .map((u) => u.downloadUrl)
-      .filter((x): x is string => Boolean(x));
+    const urls =
+      mediaMode === "files"
+        ? uploads
+            .map((u) => u.downloadUrl)
+            .filter((x): x is string => Boolean(x))
+        : urlText
+            .split(/\r?\n|,/)
+            .map((url) => url.trim())
+            .filter(Boolean);
     if (!title.trim() || !prod.trim()) {
       setSubmitError("Title and producer are required.");
       return;
     }
     if (urls.length === 0) {
-      setSubmitError("Upload at least one video.");
+      setSubmitError(
+        mediaMode === "files"
+          ? "Upload at least one video."
+          : "Enter at least one media URL."
+      );
       return;
     }
     setSubmitting(true);
@@ -241,6 +148,8 @@ export default function SnippetForm() {
       setIsNew(false);
       setPingNewSnippet(false);
       setUploads([]);
+      setUrlText("");
+      setMediaMode("files");
       uploadIndexRef.current = 1;
     } catch {
       setSubmitError("Network error");
@@ -390,48 +299,76 @@ export default function SnippetForm() {
       </div>
 
       <div style={{ marginBottom: "1.25rem" }}>
-        <label className="field-label">Files</label>
-        <div
-          className="dropzone"
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.currentTarget.classList.add("drag");
-          }}
-          onDragLeave={(e) => e.currentTarget.classList.remove("drag")}
-          onDrop={onDrop}
-          onClick={() => document.getElementById("file-input")?.click()}
-        >
-          <input
-            id="file-input"
-            type="file"
-            accept="video/*"
-            multiple
-            style={{ display: "none" }}
-            onChange={(e) => e.target.files && void onFiles(e.target.files)}
-          />
-          <span className="mono" style={{ color: "var(--text-muted)" }}>
-            Drop videos or click to upload
-          </span>
+        <label className="field-label">Media</label>
+        <div className="input-mode-toggle">
+          <button
+            type="button"
+            className={`input-mode-pill${mediaMode === "files" ? " active" : ""}`}
+            onClick={() => setMediaMode("files")}
+          >
+            Upload file
+          </button>
+          <button
+            type="button"
+            className={`input-mode-pill${mediaMode === "urls" ? " active" : ""}`}
+            onClick={() => setMediaMode("urls")}
+          >
+            Paste URLs
+          </button>
         </div>
-        {uploads.map((u) => (
-          <div key={u.id} className="file-row mono">
-            <span className="file-row-name">
-              {u.name} — {(u.size / 1024 / 1024).toFixed(1)} MB
-            </span>
-            {u.error ? (
-              <span style={{ color: "var(--danger)" }}>{u.error}</span>
-            ) : u.downloadUrl ? (
-              <span style={{ color: "var(--success)" }}>Ready</span>
-            ) : (
-              <span>{u.progress}%</span>
-            )}
-            {!u.error && !u.downloadUrl && (
-              <div className="progress-bar" style={{ flex: "1 1 100%" }}>
-                <span style={{ width: `${u.progress}%` }} />
+        {mediaMode === "files" ? (
+          <>
+            <div
+              className="dropzone"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add("drag");
+              }}
+              onDragLeave={(e) => e.currentTarget.classList.remove("drag")}
+              onDrop={onDrop}
+              onClick={() => document.getElementById("file-input")?.click()}
+            >
+              <input
+                id="file-input"
+                type="file"
+                accept="video/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={(e) => e.target.files && void onFiles(e.target.files)}
+              />
+              <span className="mono" style={{ color: "var(--text-muted)" }}>
+                Drop videos or click to upload
+              </span>
+            </div>
+            {uploads.map((u) => (
+              <div key={u.id} className="file-row mono">
+                <span className="file-row-name">
+                  {u.name} — {(u.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+                {u.error ? (
+                  <span style={{ color: "var(--danger)" }}>{u.error}</span>
+                ) : u.downloadUrl ? (
+                  <span style={{ color: "var(--success)" }}>Ready</span>
+                ) : (
+                  <span>{u.progress}%</span>
+                )}
+                {!u.error && !u.downloadUrl && (
+                  <div className="progress-bar" style={{ flex: "1 1 100%" }}>
+                    <span style={{ width: `${u.progress}%` }} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            ))}
+          </>
+        ) : (
+          <textarea
+            className="mono"
+            rows={6}
+            value={urlText}
+            onChange={(e) => setUrlText(e.target.value)}
+            placeholder={"One media URL per line\nhttps://fast-file.com/example/download"}
+          />
+        )}
       </div>
 
       <button
