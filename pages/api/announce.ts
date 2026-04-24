@@ -40,16 +40,16 @@ export default async function handler(
   try {
     const octokit = getOctokit();
     const snippet = await getSnippetAtPath(octokit, body.path);
-    
-    // Create a minimal snippet object with just the single media URL
+
+    // Create a minimal snippet object with just the single media URL in tagged_media
     const singleMediaSnippet: Snippet = {
       ...snippet,
-      untagged_media: [body.mediaUrl],
-      tagged_media: [],
+      untagged_media: [],
+      tagged_media: [body.mediaUrl],
     };
-    
-    await postSnippetNewWebhook(singleMediaSnippet, body.includePing);
-    
+
+    await postSnippetNewWebhook(singleMediaSnippet, body.includePing, false);
+
     return res.status(200).json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Could not announce snippet";

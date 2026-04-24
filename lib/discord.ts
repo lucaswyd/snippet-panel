@@ -304,7 +304,8 @@ export async function postChannelMessage(
 
 export async function postSnippetNewWebhook(
   s: Snippet,
-  includePing = true
+  includePing = true,
+  includeSeparator = false
 ): Promise<void> {
   const url = process.env.WEBHOOK_NEW_SNIPPETS;
   if (!url) throw new Error("WEBHOOK_NEW_SNIPPETS is not set");
@@ -314,8 +315,10 @@ export async function postSnippetNewWebhook(
     await executeWebhookPost(base, { content: m });
     await sleep(WEBHOOK_POST_GAP_MS);
   }
-  await executeWebhookPost(base, { content: separatorMessage() });
-  await sleep(WEBHOOK_POST_GAP_MS);
+  if (includeSeparator) {
+    await executeWebhookPost(base, { content: separatorMessage() });
+    await sleep(WEBHOOK_POST_GAP_MS);
+  }
 }
 
 export interface DiscordMessage {
