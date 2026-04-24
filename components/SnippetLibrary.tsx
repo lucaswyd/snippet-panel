@@ -99,6 +99,7 @@ export default function SnippetLibrary() {
   const [isMobile, setIsMobile] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState<UploadingMedia[]>([]);
   const [announceModalOpen, setAnnounceModalOpen] = useState(false);
+  const [announcingMediaUrl, setAnnouncingMediaUrl] = useState<string | null>(null);
   const [announcing, setAnnouncing] = useState(false);
   const [announceError, setAnnounceError] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
@@ -392,7 +393,7 @@ export default function SnippetLibrary() {
   );
 
   const announceSnippet = async (includePing: boolean) => {
-    if (!selectedRecord) return;
+    if (!selectedRecord || !announcingMediaUrl) return;
     setAnnouncing(true);
     setAnnounceError(null);
     try {
@@ -401,6 +402,7 @@ export default function SnippetLibrary() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           path: selectedRecord.path,
+          mediaUrl: announcingMediaUrl,
           includePing,
         }),
       });
@@ -409,6 +411,7 @@ export default function SnippetLibrary() {
         throw new Error(data.error || "Announce failed");
       }
       setAnnounceModalOpen(false);
+      setAnnouncingMediaUrl(null);
     } catch (e) {
       setAnnounceError(e instanceof Error ? e.message : "Could not announce snippet");
     } finally {
@@ -522,14 +525,6 @@ export default function SnippetLibrary() {
                       onClick={() => void deleteSelected()}
                     >
                       {deleting ? "Deleting…" : "Delete snippet"}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-ghost"
-                      disabled={saving || deleting}
-                      onClick={() => setAnnounceModalOpen(true)}
-                    >
-                      Announce new snippet
                     </button>
                     <button
                       type="button"
@@ -761,6 +756,18 @@ export default function SnippetLibrary() {
                             }
                           />
                           <div className="library-url-actions">
+                            {media.untaggedUrl && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                onClick={() => {
+                                  setAnnouncingMediaUrl(media.untaggedUrl);
+                                  setAnnounceModalOpen(true);
+                                }}
+                              >
+                                Announce new snippet
+                              </button>
+                            )}
                             <button
                               type="button"
                               className="btn btn-ghost"
@@ -789,7 +796,13 @@ export default function SnippetLibrary() {
       </div>
 
       {announceModalOpen && (
-        <div className="modal-backdrop" onClick={() => setAnnounceModalOpen(false)}>
+        <div
+          className="modal-backdrop"
+          onClick={() => {
+            setAnnounceModalOpen(false);
+            setAnnouncingMediaUrl(null);
+          }}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Ping?</h2>
             {announceError && (
@@ -805,7 +818,10 @@ export default function SnippetLibrary() {
                 type="button"
                 className="btn btn-ghost"
                 disabled={announcing}
-                onClick={() => setAnnounceModalOpen(false)}
+                onClick={() => {
+                  setAnnounceModalOpen(false);
+                  setAnnouncingMediaUrl(null);
+                }}
               >
                 Cancel
               </button>

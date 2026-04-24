@@ -5,6 +5,7 @@ import type { Snippet } from "@/lib/snippets";
 
 type AnnounceBody = {
   path: string;
+  mediaUrl: string;
   includePing: boolean;
 };
 
@@ -28,6 +29,10 @@ export default async function handler(
     return res.status(400).json({ error: "path required" });
   }
 
+  if (!body.mediaUrl || typeof body.mediaUrl !== "string") {
+    return res.status(400).json({ error: "mediaUrl required" });
+  }
+
   if (typeof body.includePing !== "boolean") {
     return res.status(400).json({ error: "includePing must be boolean" });
   }
@@ -36,7 +41,14 @@ export default async function handler(
     const octokit = getOctokit();
     const snippet = await getSnippetAtPath(octokit, body.path);
     
-    await postSnippetNewWebhook(snippet, body.includePing);
+    // Create a minimal snippet object with just the single media URL
+    const singleMediaSnippet: Snippet = {
+      ...snippet,
+      untagged_media: [body.mediaUrl],
+      tagged_media: [],
+    };
+    
+    await postSnippetNewWebhook(singleMediaSnippet, body.includePing);
     
     return res.status(200).json({ ok: true });
   } catch (e) {

@@ -521,6 +521,8 @@ textarea:focus {
   gap: 0.8rem;
   padding-right: 0.25rem;
   align-content: start;
+  max-height: 72vh;
+  overflow-y: auto;
 }
 
 .library-card {
@@ -781,11 +783,13 @@ textarea:focus {
 
   .library-mobile-viewport {
     overflow: hidden;
+    height: calc(100vh - 180px);
   }
 
   .library-grid {
     display: flex;
     width: 200%;
+    height: 100%;
     transform: translateX(0);
     transition: transform 240ms ease;
   }
@@ -798,6 +802,8 @@ textarea:focus {
   .library-editor {
     width: 50%;
     flex-shrink: 0;
+    height: 100%;
+    overflow-y: auto;
   }
 
   .library-editor,
