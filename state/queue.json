@@ -1,0 +1,27 @@
+[
+  {
+    "id": "c8504e53-7239-441e-a257-ef10673525a2",
+    "snippetPath": "snippets/5.json",
+    "snippet": {
+      "createdAt": "2026-04-24T18:29:45.600Z",
+      "title": "5",
+      "titleConfirmed": true,
+      "prod": "1",
+      "prodConfirmed": true,
+      "date": "2026-04-29",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/f05c60bc/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "c8504e53-7239-441e-a257-ef10673525a2"
+    },
+    "status": "tagging",
+    "isNew": true,
+    "pingNewSnippet": false,
+    "createdAt": "2026-04-24T18:29:45.600Z",
+    "rawFileUrls": [
+      "https://fast-file.com/f05c60bc/download"
+    ]
+  }
+]
