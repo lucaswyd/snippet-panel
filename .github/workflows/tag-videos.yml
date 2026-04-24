@@ -16,10 +16,9 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout snippets repo
+      - name: Checkout main repo
         uses: actions/checkout@v4
         with:
-          repository: ${{ github.repository_owner }}/${{ secrets.SNIPPETS_REPO_NAME }}
           token: ${{ secrets.GH_PAT }}
           fetch-depth: 2
 
@@ -74,11 +73,13 @@ jobs:
 
           FONT="/tmp/fonts/SFPRODISPLAYMEDIUM.OTF"
 
-          FILE="${SNIPPET_PATH}"
-          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
-            echo "Snippet file not found: $FILE"
-            exit 1
-          fi
+          # Download snippet file from snippets repo via GitHub API
+          SNIPPET_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH}"
+          SNIPPET_CONTENT=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
+          SNIPPET_BASE64=$(echo "$SNIPPET_CONTENT" | jq -r '.content')
+          SNIPPET_JSON=$(echo "$SNIPPET_BASE64" | base64 -d)
+          echo "$SNIPPET_JSON" > /tmp/snippet.json
+          FILE="/tmp/snippet.json"
 
           echo "Processing $FILE"
 
@@ -129,10 +130,8 @@ jobs:
 
           export FULL_POST_ACTION="full-post-queue-private"
           export FULL_POST_CLIENT_PAYLOAD
-          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" '{snippetPath: $p}')
+          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$SNIPPET_PATH" '{snippetPath: $p}')
           npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
-
-          git pull --rebase origin main || true
 
           TAG_URLS='[]'
           i=0
@@ -183,11 +182,14 @@ jobs:
           jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
           mv "${FILE}.tmp" "$FILE"
 
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add "$FILE"
-          git commit -m "Tag media for ${FILE}"
-          git push origin HEAD
+          # Upload updated snippet file to snippets repo via GitHub API
+          UPDATED_CONTENT=$(base64 -w 0 "$FILE")
+          SNIPPET_SHA=$(echo "$SNIPPET_CONTENT" | jq -r '.sha')
+          UPDATE_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH}"
+          curl -fsSL -X PUT "${UPDATE_URL}" \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"message\":\"Tag media for ${SNIPPET_PATH}\",\"content\":\"${UPDATED_CONTENT}\",\"sha\":\"${SNIPPET_SHA}\"}"
 
           curl -fsS -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
@@ -195,7 +197,7 @@ jobs:
             -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
 
           export FULL_POST_ACTION="full-post-queue-public"
-          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$FILE" --argjson t "$TAG_URLS" --argjson isNew "$IS_NEW_SNIPPET" --argjson ping "$PING_NEW_SNIPPET" '{snippetPath: $p, taggedMediaUrls: $t, isNew: $isNew, pingNewSnippet: $ping}')
+          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$SNIPPET_PATH" --argjson t "$TAG_URLS" --argjson isNew "$IS_NEW_SNIPPET" --argjson ping "$PING_NEW_SNIPPET" '{snippetPath: $p, taggedMediaUrls: $t, isNew: $isNew, pingNewSnippet: $ping}')
           npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
 
           curl -fsS -X POST "${BASE}/api/internal-post-complete" \
