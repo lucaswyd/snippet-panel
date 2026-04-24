@@ -76,11 +76,19 @@ jobs:
           # Download snippet file from snippets repo via GitHub API
           SNIPPET_PATH_ENCODED=$(echo "$SNIPPET_PATH" | jq -sRr @uri)
           SNIPPET_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
+          HTTP_CODE=$(curl -fsSL -o /dev/null -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
+
+          if [ "$HTTP_CODE" = "404" ]; then
+            echo "Snippet file not found: $SNIPPET_PATH"
+            exit 1
+          fi
+
           SNIPPET_CONTENT=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
           SNIPPET_BASE64=$(echo "$SNIPPET_CONTENT" | jq -r '.content')
           SNIPPET_JSON=$(echo "$SNIPPET_BASE64" | base64 -d)
           echo "$SNIPPET_JSON" > /tmp/snippet.json
           FILE="/tmp/snippet.json"
+          SNIPPET_SHA=$(echo "$SNIPPET_CONTENT" | jq -r '.sha // empty')
 
           echo "Processing $FILE"
 
@@ -185,14 +193,27 @@ jobs:
           jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
           mv "${FILE}.tmp" "$FILE"
 
+          # Get current SHA from GitHub API to avoid conflicts
+          CURRENT_SNIPPET_CONTENT=$(curl -fsSL -H "Authorization: token ${GITHUB_TOKEN}" "${SNIPPET_URL}")
+          CURRENT_SHA=$(echo "$CURRENT_SNIPPET_CONTENT" | jq -r '.sha // empty')
+
           # Upload updated snippet file to snippets repo via GitHub API
           UPDATED_CONTENT=$(base64 -w 0 "$FILE")
-          SNIPPET_SHA=$(echo "$SNIPPET_CONTENT" | jq -r '.sha')
           UPDATE_URL="https://api.github.com/repos/${GITHUB_REPO_OWNER}/${SNIPPETS_REPO_NAME}/contents/${SNIPPET_PATH_ENCODED}"
-          curl -fsSL -X PUT "${UPDATE_URL}" \
-            -H "Authorization: token ${GITHUB_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"message\":\"Tag media for ${SNIPPET_PATH}\",\"content\":\"${UPDATED_CONTENT}\",\"sha\":\"${SNIPPET_SHA}\"}"
+
+          if [ -z "$CURRENT_SHA" ] || [ "$CURRENT_SHA" = "null" ]; then
+            # File doesn't exist, create it
+            curl -fsSL -X PUT "${UPDATE_URL}" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"message\":\"Tag media for ${SNIPPET_PATH}\",\"content\":\"${UPDATED_CONTENT}\"}"
+          else
+            # File exists, update it
+            curl -fsSL -X PUT "${UPDATE_URL}" \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"message\":\"Tag media for ${SNIPPET_PATH}\",\"content\":\"${UPDATED_CONTENT}\",\"sha\":\"${CURRENT_SHA}\"}"
+          fi
 
           curl -fsS -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
