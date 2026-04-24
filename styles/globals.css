@@ -520,6 +520,11 @@ textarea:focus {
 .library-card-title {
   font-size: 1rem;
   margin-bottom: 0.2rem;
+  line-height: 1.35;
+}
+
+.library-status-badge {
+  animation: none;
 }
 
 .library-card-meta {

@@ -28,6 +28,13 @@ function draftFromSnippet(snippet: Snippet): Draft {
   };
 }
 
+function displayTitle(snippet: Snippet): string {
+  const title = `${snippet.title}${snippet.titleConfirmed ? "" : "*"}`;
+  const feat = snippet.feat?.trim();
+  if (!feat) return title;
+  return `${title} (feat. ${feat})`;
+}
+
 export default function SnippetLibrary() {
   const [records, setRecords] = useState<SnippetRecord[]>([]);
   const [selectedPath, setSelectedPath] = useState<string>("");
@@ -162,16 +169,14 @@ export default function SnippetLibrary() {
                 >
                   <div className="library-card-head">
                     <div>
-                      <div className="library-card-title">{record.snippet.title}</div>
-                      <div className="subtle">
-                        {record.snippet.feat
-                          ? `${record.snippet.prod} feat. ${record.snippet.feat}`
-                          : record.snippet.prod}
+                      <div className="library-card-title">
+                        <span>{displayTitle(record.snippet)}</span>
                       </div>
+                      <div className="subtle">{record.snippet.prod}</div>
                     </div>
                     <span
-                      className={`badge ${
-                        record.snippet.released ? "badge-done" : "badge-posting"
+                      className={`badge library-status-badge ${
+                        record.snippet.released ? "badge-done" : "badge-pending"
                       }`}
                     >
                       {record.snippet.released ? "Released" : "Unreleased"}
@@ -179,8 +184,7 @@ export default function SnippetLibrary() {
                   </div>
                   <div className="library-card-meta">
                     <span>{record.snippet.date}</span>
-                    <span>{record.snippet.untagged_media.length} untagged</span>
-                    <span>{record.snippet.tagged_media.length} tagged</span>
+                    <span>{record.snippet.untagged_media.length} snippets</span>
                   </div>
                 </button>
               );
