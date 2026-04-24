@@ -756,12 +756,12 @@ export default function SnippetLibrary() {
                             }
                           />
                           <div className="library-url-actions">
-                            {media.untaggedUrl && (
+                            {media.taggedUrl && (
                               <button
                                 type="button"
                                 className="btn btn-ghost"
                                 onClick={() => {
-                                  setAnnouncingMediaUrl(media.untaggedUrl);
+                                  setAnnouncingMediaUrl(media.taggedUrl);
                                   setAnnounceModalOpen(true);
                                 }}
                               >

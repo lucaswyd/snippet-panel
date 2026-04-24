@@ -37,6 +37,18 @@ function repo(): string {
   return n;
 }
 
+function snippetsOwner(): string {
+  const o = process.env.GITHUB_SNIPPETS_REPO_OWNER;
+  if (!o) throw new Error("GITHUB_SNIPPETS_REPO_OWNER is not set");
+  return o;
+}
+
+function snippetsRepo(): string {
+  const n = process.env.GITHUB_SNIPPETS_REPO_NAME;
+  if (!n) throw new Error("GITHUB_SNIPPETS_REPO_NAME is not set");
+  return n;
+}
+
 export function getOctokit(): Octokit {
   const token = process.env.GITHUB_TOKEN;
   if (!token) throw new Error("GITHUB_TOKEN is not set");
@@ -82,6 +94,35 @@ export async function getFileContentOptional(
   }
 }
 
+export async function getFileContentFromSnippetsRepo(
+  octokit: Octokit,
+  path: string
+): Promise<{ content: string; sha: string }> {
+  const { data } = await octokit.rest.repos.getContent({
+    owner: snippetsOwner(),
+    repo: snippetsRepo(),
+    path,
+  });
+  if (Array.isArray(data) || !("content" in data)) {
+    throw new Error(`Expected file at ${path}`);
+  }
+  const content = Buffer.from(data.content, "base64").toString("utf8");
+  return { content, sha: data.sha };
+}
+
+/** Missing file → null; other errors propagate. */
+export async function getFileContentOptionalFromSnippetsRepo(
+  octokit: Octokit,
+  path: string
+): Promise<{ content: string; sha: string } | null> {
+  try {
+    return await getFileContentFromSnippetsRepo(octokit, path);
+  } catch (e) {
+    if (isNotFound(e)) return null;
+    throw e;
+  }
+}
+
 export async function getChannelsState(octokit: Octokit): Promise<ChannelsState> {
   const { content } = await getFileContent(octokit, "state/channels.json");
   return JSON.parse(content) as ChannelsState;
@@ -110,8 +151,8 @@ export async function putChannelsState(
 export async function listSnippetPaths(octokit: Octokit): Promise<string[]> {
   try {
     const { data } = await octokit.rest.repos.getContent({
-      owner: owner(),
-      repo: repo(),
+      owner: snippetsOwner(),
+      repo: snippetsRepo(),
       path: "snippets",
     });
     if (!Array.isArray(data)) return [];
@@ -127,7 +168,7 @@ export async function getSnippetAtPath(
   octokit: Octokit,
   path: string
 ): Promise<Snippet> {
-  const { content } = await getFileContent(octokit, path);
+  const { content } = await getFileContentFromSnippetsRepo(octokit, path);
   return JSON.parse(content) as Snippet;
 }
 
@@ -142,7 +183,7 @@ export async function mutateJsonFile<T>(
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const currentFile = await getFileContentOptional(octokit, path);
+    const currentFile = await getFileContentOptionalFromSnippetsRepo(octokit, path);
     const current = currentFile
       ? (JSON.parse(currentFile.content) as T)
       : defaultValue;
@@ -153,8 +194,8 @@ export async function mutateJsonFile<T>(
 
     try {
       await octokit.rest.repos.createOrUpdateFileContents({
-        owner: owner(),
-        repo: repo(),
+        owner: snippetsOwner(),
+        repo: snippetsRepo(),
         path,
         message,
         content: encoded,
@@ -198,8 +239,8 @@ export async function getAllSnippets(octokit: Octokit): Promise<Snippet[]> {
   if (!token) throw new Error("GITHUB_TOKEN is not set");
 
   const { data } = await octokit.rest.repos.getContent({
-    owner: owner(),
-    repo: repo(),
+    owner: snippetsOwner(),
+    repo: snippetsRepo(),
     path: "snippets",
   });
 
@@ -246,14 +287,14 @@ export async function createOrUpdateSnippetFile(
   const body = JSON.stringify(snippet, null, 2);
   let sha: string | undefined;
   try {
-    const cur = await getFileContent(octokit, path);
+    const cur = await getFileContentFromSnippetsRepo(octokit, path);
     sha = cur.sha;
   } catch {
     sha = undefined;
   }
   await octokit.rest.repos.createOrUpdateFileContents({
-    owner: owner(),
-    repo: repo(),
+    owner: snippetsOwner(),
+    repo: snippetsRepo(),
     path,
     message,
     content: Buffer.from(body, "utf8").toString("base64"),
@@ -266,11 +307,11 @@ export async function deleteSnippetFile(
   path: string,
   message: string
 ): Promise<void> {
-  const cur = await getFileContentOptional(octokit, path);
+  const cur = await getFileContentOptionalFromSnippetsRepo(octokit, path);
   if (!cur) return;
   await octokit.rest.repos.deleteFile({
-    owner: owner(),
-    repo: repo(),
+    owner: snippetsOwner(),
+    repo: snippetsRepo(),
     path,
     message,
     sha: cur.sha,

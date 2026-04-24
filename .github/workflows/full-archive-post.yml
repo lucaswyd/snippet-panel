@@ -41,6 +41,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_REPO_OWNER: ${{ github.repository_owner }}
           GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+          GITHUB_SNIPPETS_REPO_OWNER: ${{ secrets.GITHUB_SNIPPETS_REPO_OWNER }}
+          GITHUB_SNIPPETS_REPO_NAME: ${{ secrets.GITHUB_SNIPPETS_REPO_NAME }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOK_SNIPPETS: ${{ secrets.WEBHOOK_SNIPPETS }}
           WEBHOOK_BLANK: ${{ secrets.WEBHOOK_BLANK }}

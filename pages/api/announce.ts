@@ -41,7 +41,7 @@ export default async function handler(
     const octokit = getOctokit();
     const snippet = await getSnippetAtPath(octokit, body.path);
 
-    // Create a minimal snippet object with just the single media URL in tagged_media
+    // Create a minimal snippet object with just the single media URL
     const singleMediaSnippet: Snippet = {
       ...snippet,
       untagged_media: [],
