@@ -88,12 +88,7 @@ function HomeInner() {
         </div>
 
         <header style={{ marginBottom: "2rem", maxWidth: 560 }}>
-          <p className="page-kicker">Snippet control room</p>
-          <h1 style={{ fontSize: "2.35rem" }}>Snippet Panel</h1>
-          <p className="subtle" style={{ fontSize: "0.95rem", lineHeight: 1.7 }}>
-            Queue new uploads, track processing, and step into the archive view to
-            edit posted snippet metadata without leaving the panel.
-          </p>
+          <h1 style={{ fontSize: "2.35rem" }}>Snippet Archive</h1>
         </header>
 
         <div className="panel page-switcher">
