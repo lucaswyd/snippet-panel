@@ -98,6 +98,9 @@ export default function SnippetLibrary() {
   const [mobileEditorVisible, setMobileEditorVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState<UploadingMedia[]>([]);
+  const [announceModalOpen, setAnnounceModalOpen] = useState(false);
+  const [announcing, setAnnouncing] = useState(false);
+  const [announceError, setAnnounceError] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
   const mediaFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -365,7 +368,7 @@ export default function SnippetLibrary() {
                     {
                       id,
                       untaggedUrl: result.downloadUrl ?? "",
-                      taggedUrl: result.downloadUrl ?? "",
+                      taggedUrl: "",
                     },
                   ],
                 }
@@ -387,6 +390,31 @@ export default function SnippetLibrary() {
     },
     [draft, uploadingMedia.length]
   );
+
+  const announceSnippet = async (includePing: boolean) => {
+    if (!selectedRecord) return;
+    setAnnouncing(true);
+    setAnnounceError(null);
+    try {
+      const res = await fetch("/api/announce", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: selectedRecord.path,
+          includePing,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Announce failed");
+      }
+      setAnnounceModalOpen(false);
+    } catch (e) {
+      setAnnounceError(e instanceof Error ? e.message : "Could not announce snippet");
+    } finally {
+      setAnnouncing(false);
+    }
+  };
 
   return (
     <section className="snippet-library panel">
@@ -494,6 +522,14 @@ export default function SnippetLibrary() {
                       onClick={() => void deleteSelected()}
                     >
                       {deleting ? "Deleting…" : "Delete snippet"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      disabled={saving || deleting}
+                      onClick={() => setAnnounceModalOpen(true)}
+                    >
+                      Announce new snippet
                     </button>
                     <button
                       type="button"
@@ -745,16 +781,54 @@ export default function SnippetLibrary() {
                   </p>
                 ) : null}
 
-                <p className="subtle" style={{ margin: "1rem 0 0" }}>
-                  Uploading a file here fills both untagged and tagged URLs so the
-                  order and replay logic stay intact. You can still edit either URL
-                  directly before saving.
-                </p>
+                
               </>
             )}
           </div>
         </div>
       </div>
+
+      {announceModalOpen && (
+        <div className="modal-backdrop" onClick={() => setAnnounceModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Ping?</h2>
+            {announceError && (
+              <div className="banner-error" style={{ marginBottom: "1rem" }}>
+                {announceError}
+              </div>
+            )}
+            <p className="subtle" style={{ marginBottom: "1.5rem" }}>
+              Include role ping in the announcement?
+            </p>
+            <div className="row" style={{ gap: "0.5rem" }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={announcing}
+                onClick={() => setAnnounceModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={announcing}
+                onClick={() => void announceSnippet(false)}
+              >
+                {announcing ? "Posting…" : "No"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={announcing}
+                onClick={() => void announceSnippet(true)}
+              >
+                {announcing ? "Posting…" : "Yes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

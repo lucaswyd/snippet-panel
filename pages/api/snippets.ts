@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { v4 as uuidv4 } from "uuid";
 import {
   deleteWebhookMessage,
   editWebhookMessage,
@@ -17,9 +18,11 @@ import {
   buildPrivateChannelMessages,
   buildSwapChannelMessages,
   readSnippetMessageIds,
+  type QueueItem,
   type Snippet,
   writeSnippetMessageIds,
 } from "@/lib/snippets";
+import { pushQueueItem, updateQueueItem } from "@/lib/queue";
 
 type SnippetRecord = {
   path: string;
@@ -337,49 +340,130 @@ export default async function handler(
     try {
       const beforeRecords = await loadOrderedSnippetRecords();
       const octokit = getOctokit();
-      const updated = await mutateSnippetAtPath(
-        octokit,
-        body.path,
-        `snippet edit: ${body.path.split("/").pop() ?? body.path}`,
-        (current) => {
-          const media = normalizeMedia(body.media, current);
-          return {
-            ...current,
-            title:
-              typeof body.title === "string" && body.title.trim()
-                ? body.title.trim()
-                : current.title,
-            titleConfirmed:
-              typeof body.titleConfirmed === "boolean"
-                ? body.titleConfirmed
-                : current.titleConfirmed,
-            feat:
-              typeof body.feat === "string"
-                ? body.feat.trim() || undefined
-                : current.feat,
-            prod:
-              typeof body.prod === "string" && body.prod.trim()
-                ? body.prod.trim()
-                : current.prod,
-            prodConfirmed:
-              typeof body.prodConfirmed === "boolean"
-                ? body.prodConfirmed
-                : current.prodConfirmed,
-            date:
-              typeof body.date === "string" && body.date
-                ? body.date
-                : current.date,
-            released:
-              typeof body.released === "boolean"
-                ? body.released
-                : current.released,
-            untagged_media: media.untagged,
-            tagged_media: media.tagged,
-          };
-        }
+      const currentSnippet = await getSnippetAtPath(octokit, body.path);
+      const media = normalizeMedia(body.media, currentSnippet);
+
+      // Detect new untagged URLs
+      const currentUntaggedSet = new Set(currentSnippet.untagged_media);
+      const newUntaggedUrls = media.untagged.filter(
+        (url) => !currentUntaggedSet.has(url)
       );
-      const afterRecords = await loadOrderedSnippetRecords();
-      await syncSnippetChange(body.path, beforeRecords, afterRecords);
+
+      let updated: Snippet;
+
+      if (newUntaggedUrls.length > 0) {
+        // New media added - add to queue for tagging/posting
+        const id = uuidv4();
+        const createdAt = new Date().toISOString();
+
+        // Update snippet with new untagged media, keep existing tagged media
+        updated = await mutateSnippetAtPath(
+          octokit,
+          body.path,
+          `snippet edit: add media queue ${id}`,
+          (current) => {
+            return {
+              ...current,
+              title:
+                typeof body.title === "string" && body.title.trim()
+                  ? body.title.trim()
+                  : current.title,
+              titleConfirmed:
+                typeof body.titleConfirmed === "boolean"
+                  ? body.titleConfirmed
+                  : current.titleConfirmed,
+              feat:
+                typeof body.feat === "string"
+                  ? body.feat.trim() || undefined
+                  : current.feat,
+              prod:
+                typeof body.prod === "string" && body.prod.trim()
+                  ? body.prod.trim()
+                  : current.prod,
+              prodConfirmed:
+                typeof body.prodConfirmed === "boolean"
+                  ? body.prodConfirmed
+                  : current.prodConfirmed,
+              date:
+                typeof body.date === "string" && body.date
+                  ? body.date
+                  : current.date,
+              released:
+                typeof body.released === "boolean"
+                  ? body.released
+                  : current.released,
+              untagged_media: media.untagged,
+              tagged_media: media.tagged,
+              _queueId: id,
+            };
+          }
+        );
+
+        // Add to queue
+        const queueItem: QueueItem = {
+          id,
+          snippetPath: body.path,
+          snippet: { ...updated },
+          status: "tagging",
+          isNew: false,
+          pingNewSnippet: false,
+          createdAt,
+          rawFileUrls: newUntaggedUrls,
+        };
+
+        try {
+          await pushQueueItem(queueItem);
+        } catch (e) {
+          const msg =
+            e instanceof Error ? e.message : "Could not save queue (filesystem)";
+          await updateQueueItem(id, { status: "error", errorMessage: msg });
+        }
+      } else {
+        // No new media - normal update with Discord sync
+        updated = await mutateSnippetAtPath(
+          octokit,
+          body.path,
+          `snippet edit: ${body.path.split("/").pop() ?? body.path}`,
+          (current) => {
+            return {
+              ...current,
+              title:
+                typeof body.title === "string" && body.title.trim()
+                  ? body.title.trim()
+                  : current.title,
+              titleConfirmed:
+                typeof body.titleConfirmed === "boolean"
+                  ? body.titleConfirmed
+                  : current.titleConfirmed,
+              feat:
+                typeof body.feat === "string"
+                  ? body.feat.trim() || undefined
+                  : current.feat,
+              prod:
+                typeof body.prod === "string" && body.prod.trim()
+                  ? body.prod.trim()
+                  : current.prod,
+              prodConfirmed:
+                typeof body.prodConfirmed === "boolean"
+                  ? body.prodConfirmed
+                  : current.prodConfirmed,
+              date:
+                typeof body.date === "string" && body.date
+                  ? body.date
+                  : current.date,
+              released:
+                typeof body.released === "boolean"
+                  ? body.released
+                  : current.released,
+              untagged_media: media.untagged,
+              tagged_media: media.tagged,
+            };
+          }
+        );
+        const afterRecords = await loadOrderedSnippetRecords();
+        await syncSnippetChange(body.path, beforeRecords, afterRecords);
+      }
+
       return res.status(200).json({ ok: true, snippet: updated });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not update snippet";

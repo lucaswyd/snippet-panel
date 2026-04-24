@@ -10,6 +10,7 @@
     "pages/api/internal-post-complete.ts": { "maxDuration": 15 },
     "pages/api/repost-chunk.ts": { "maxDuration": 60 },
     "pages/api/repost-start.ts": { "maxDuration": 60 },
-    "pages/api/repost-status.ts": { "maxDuration": 15 }
+    "pages/api/repost-status.ts": { "maxDuration": 15 },
+    "pages/api/announce.ts": { "maxDuration": 60 }
   }
 }

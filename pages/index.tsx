@@ -97,14 +97,14 @@ function HomeInner() {
             className={`page-tab${activeView === "queue" ? " active" : ""}`}
             onClick={() => setActiveView("queue")}
           >
-            Queue
+            Add new
           </button>
           <button
             type="button"
             className={`page-tab${activeView === "library" ? " active" : ""}`}
             onClick={() => setActiveView("library")}
           >
-            Snippet Library
+            Library
           </button>
         </div>
 
