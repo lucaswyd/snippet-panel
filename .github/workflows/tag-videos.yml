@@ -168,6 +168,12 @@ jobs:
               [ -z "$URL" ] && continue
 
               echo "Downloading from URL: $URL"
+
+              # Fix malformed URLs - strip any protocol/domain prefix from the path
+              if [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}"
+              fi
+
               i=$((i+1))
 
               OUT_EXT="mp4"
@@ -251,6 +257,12 @@ jobs:
               [ -z "$URL" ] && continue
 
               echo "Downloading from URL: $URL"
+
+              # Fix malformed URLs - strip any protocol/domain prefix from the path
+              if [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}"
+              fi
+
               i=$((i+1))
 
               OUT_EXT="mp4"
