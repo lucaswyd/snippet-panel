@@ -215,7 +215,42 @@ async function runQueueForTarget(
   }
 
   const isNewest = insertAt === ordered.length - 1;
-  if (isNewest) {
+  const existingMessageIds = readSnippetMessageIds(targetRec.snippet)[target]?.messageIds ?? [];
+  const newMessages = messagesFor(target, targetRec.snippet);
+
+  // If snippet already has messages and new message count <= existing count, edit instead of rebuild
+  if (existingMessageIds.length > 0 && newMessages.length <= existingMessageIds.length) {
+    console.log(`[queue-${target}] editing existing ${existingMessageIds.length} messages`);
+    const webhook = webhookFor(target);
+    const octokit = getOctokit();
+
+    // Edit each existing message with new content
+    for (let i = 0; i < newMessages.length; i++) {
+      await fetch(`${webhook}/messages/${existingMessageIds[i]}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: newMessages[i] }),
+      });
+    }
+
+    // Delete any excess messages if new count < existing count
+    for (let i = newMessages.length; i < existingMessageIds.length; i++) {
+      await deleteWebhookMessage(webhook, existingMessageIds[i]);
+    }
+
+    // Update message IDs in snippet (remove deleted ones)
+    const updatedIds = existingMessageIds.slice(0, newMessages.length);
+    const separatorId = readSnippetMessageIds(targetRec.snippet)[target]?.separatorId;
+    targetRec.snippet = await mutateSnippetAtPath(
+      octokit,
+      snippetPath,
+      `messageId ${target}: edit ${targetRec.snippet.title}`,
+      (current) => writeSnippetMessageIds(current, target, {
+        messageIds: updatedIds,
+        separatorId,
+      })
+    );
+  } else if (isNewest) {
     console.log(`[queue-${target}] newest item, append only`);
     const previous = ordered[ordered.length - 2];
     if (previous) {
