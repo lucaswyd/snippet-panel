@@ -34,7 +34,15 @@ jobs:
           node-version: "20"
           cache: npm
 
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
       - name: Install Node deps
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
       - name: Cache FFmpeg
@@ -94,6 +102,7 @@ jobs:
           QUEUE_ID=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.queueId // empty')
           IS_NEW_SNIPPET=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.isNew // false')
           PING_NEW_SNIPPET=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.pingNewSnippet // false')
+          RAW_FILE_URLS=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.rawFileUrls // empty')
 
           if [ -z "$SNIPPET_PATH" ] || [ -z "$QUEUE_ID" ]; then
             echo "ERROR: Missing snippetPath or queueId in payload"
@@ -150,93 +159,176 @@ jobs:
           TAG_URLS='[]'
           i=0
 
-          while IFS= read -r URL; do
-            [ -z "$URL" ] && continue
+          # Use rawFileUrls from payload if provided (library additions), otherwise read from JSON
+          if [ -n "$RAW_FILE_URLS" ] && [ "$RAW_FILE_URLS" != "null" ]; then
+            echo "Processing new media from library addition"
+            # Start with existing tagged media
+            TAG_URLS=$(jq -c '.tagged_media' "$FILE")
+            echo "$RAW_FILE_URLS" | jq -r '.[]' | while IFS= read -r URL; do
+              [ -z "$URL" ] && continue
 
-            # Fix incomplete URLs - add https://fast-file.com prefix if missing
-            if [[ "$URL" == /* ]]; then
-              URL="https://fast-file.com${URL}"
-            elif [[ ! "$URL" =~ ^https?:// ]]; then
-              URL="https://fast-file.com/${URL}"
-            fi
+              echo "Downloading from URL: $URL"
+              i=$((i+1))
 
-            echo "Downloading from URL: $URL"
-            i=$((i+1))
+              OUT_EXT="mp4"
+              RAW="snippet_${i}_raw.${OUT_EXT}"
+              OUT="${SAFE_TITLE} (Snippet ${i}).${OUT_EXT}"
 
-            OUT_EXT="mp4"
-            RAW="snippet_${i}_raw.${OUT_EXT}"
-            OUT="${SAFE_TITLE} (Snippet ${i}).${OUT_EXT}"
-            # Retry download up to 3 times
-            DOWNLOAD_SUCCESS=false
-            for retry in {1..3}; do
-              if curl -fL "$URL" -o "$RAW"; then
-                DOWNLOAD_SUCCESS=true
-                break
-              else
-                echo "Download attempt $retry failed, retrying..."
-                sleep 2
+              # Retry download up to 3 times
+              DOWNLOAD_SUCCESS=false
+              for retry in {1..3}; do
+                if curl -fL "$URL" -o "$RAW"; then
+                  DOWNLOAD_SUCCESS=true
+                  break
+                else
+                  echo "Download attempt $retry failed, retrying..."
+                  sleep 2
+                fi
+              done
+
+              if [ "$DOWNLOAD_SUCCESS" = false ]; then
+                echo "ERROR: curl download failed for URL: $URL after 3 attempts"
+                exit 1
               fi
+
+              # Validate downloaded file
+              if [ ! -f "$RAW" ]; then
+                echo "ERROR: Download failed - file not created"
+                exit 1
+              fi
+
+              FILE_SIZE=$(stat -c%s "$RAW" 2>/dev/null || stat -f%z "$RAW" 2>/dev/null || echo "0")
+              if [ "$FILE_SIZE" -lt 1000 ]; then
+                echo "ERROR: Downloaded file is too small (${FILE_SIZE} bytes), likely invalid"
+                cat "$RAW" | head -c 500
+                exit 1
+              fi
+
+              # Validate it's a video file
+              if ! ffprobe -v error -show_entries format=format_name -of default=noprint_wrappers=1:nokey=1 "$RAW" 2>/dev/null | grep -q "mp4\|mov\|webm"; then
+                echo "ERROR: Downloaded file is not a valid video file"
+                ffprobe -v error "$RAW" 2>&1 | head -20
+                exit 1
+              fi
+
+              echo "Successfully downloaded video (${FILE_SIZE} bytes)"
+
+              FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
+
+              ffmpeg -y -i "$RAW" \
+                -map 0:v:0 -map 0:a:0? \
+                -dn -sn \
+                -map_metadata -1 -map_chapters -1 \
+                -vf "$FILTER" \
+                -c:v libx264 -pix_fmt yuv420p \
+                -profile:v high -level:v 4.1 \
+                -movflags +faststart \
+                -brand mp42 \
+                -video_track_timescale 30000 \
+                -c:a aac -b:a 128k -ar 48000 -ac 2 \
+                "$OUT"
+              PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,pix_fmt -of json "$OUT")
+              echo "$PROBE"
+              echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
+              echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
+              echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
+              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
+              TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
+
+              if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
+                echo "fast-file upload failed for $FILE"
+                exit 1
+              fi
+
+              DL="https://fast-file.com/${TITLE}/download"
+              TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
+
+              rm -f "$RAW" "$OUT"
             done
+          else
+            echo "Processing all untagged media (new snippet)"
+            while IFS= read -r URL; do
+              [ -z "$URL" ] && continue
 
-            if [ "$DOWNLOAD_SUCCESS" = false ]; then
-              echo "ERROR: curl download failed for URL: $URL after 3 attempts"
-              exit 1
-            fi
+              echo "Downloading from URL: $URL"
+              i=$((i+1))
 
-            # Validate downloaded file
-            if [ ! -f "$RAW" ]; then
-              echo "ERROR: Download failed - file not created"
-              exit 1
-            fi
+              OUT_EXT="mp4"
+              RAW="snippet_${i}_raw.${OUT_EXT}"
+              OUT="${SAFE_TITLE} (Snippet ${i}).${OUT_EXT}"
 
-            FILE_SIZE=$(stat -c%s "$RAW" 2>/dev/null || stat -f%z "$RAW" 2>/dev/null || echo "0")
-            if [ "$FILE_SIZE" -lt 1000 ]; then
-              echo "ERROR: Downloaded file is too small (${FILE_SIZE} bytes), likely invalid"
-              cat "$RAW" | head -c 500
-              exit 1
-            fi
+              # Retry download up to 3 times
+              DOWNLOAD_SUCCESS=false
+              for retry in {1..3}; do
+                if curl -fL "$URL" -o "$RAW"; then
+                  DOWNLOAD_SUCCESS=true
+                  break
+                else
+                  echo "Download attempt $retry failed, retrying..."
+                  sleep 2
+                fi
+              done
 
-            # Validate it's a video file
-            if ! ffprobe -v error -show_entries format=format_name -of default=noprint_wrappers=1:nokey=1 "$RAW" 2>/dev/null | grep -q "mp4\|mov\|webm"; then
-              echo "ERROR: Downloaded file is not a valid video file"
-              ffprobe -v error "$RAW" 2>&1 | head -20
-              exit 1
-            fi
+              if [ "$DOWNLOAD_SUCCESS" = false ]; then
+                echo "ERROR: curl download failed for URL: $URL after 3 attempts"
+                exit 1
+              fi
 
-            echo "Successfully downloaded video (${FILE_SIZE} bytes)"
+              # Validate downloaded file
+              if [ ! -f "$RAW" ]; then
+                echo "ERROR: Download failed - file not created"
+                exit 1
+              fi
 
-            FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
+              FILE_SIZE=$(stat -c%s "$RAW" 2>/dev/null || stat -f%z "$RAW" 2>/dev/null || echo "0")
+              if [ "$FILE_SIZE" -lt 1000 ]; then
+                echo "ERROR: Downloaded file is too small (${FILE_SIZE} bytes), likely invalid"
+                cat "$RAW" | head -c 500
+                exit 1
+              fi
 
-            ffmpeg -y -i "$RAW" \
-              -map 0:v:0 -map 0:a:0? \
-              -dn -sn \
-              -map_metadata -1 -map_chapters -1 \
-              -vf "$FILTER" \
-              -c:v libx264 -pix_fmt yuv420p \
-              -profile:v high -level:v 4.1 \
-              -movflags +faststart \
-              -brand mp42 \
-              -video_track_timescale 30000 \
-              -c:a aac -b:a 128k -ar 48000 -ac 2 \
-              "$OUT"
-            PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,pix_fmt -of json "$OUT")
-            echo "$PROBE"
-            echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
-            echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
-            echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
-            RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
-            TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
+              # Validate it's a video file
+              if ! ffprobe -v error -show_entries format=format_name -of default=noprint_wrappers=1:nokey=1 "$RAW" 2>/dev/null | grep -q "mp4\|mov\|webm"; then
+                echo "ERROR: Downloaded file is not a valid video file"
+                ffprobe -v error "$RAW" 2>&1 | head -20
+                exit 1
+              fi
 
-            if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
-              echo "fast-file upload failed for $FILE"
-              exit 1
-            fi
+              echo "Successfully downloaded video (${FILE_SIZE} bytes)"
 
-            DL="https://fast-file.com/${TITLE}/download"
-            TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
+              FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
 
-            rm -f "$RAW" "$OUT"
-          done < <(jq -r '.untagged_media[]' "$FILE")
+              ffmpeg -y -i "$RAW" \
+                -map 0:v:0 -map 0:a:0? \
+                -dn -sn \
+                -map_metadata -1 -map_chapters -1 \
+                -vf "$FILTER" \
+                -c:v libx264 -pix_fmt yuv420p \
+                -profile:v high -level:v 4.1 \
+                -movflags +faststart \
+                -brand mp42 \
+                -video_track_timescale 30000 \
+                -c:a aac -b:a 128k -ar 48000 -ac 2 \
+                "$OUT"
+              PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,pix_fmt -of json "$OUT")
+              echo "$PROBE"
+              echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
+              echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
+              echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
+              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
+              TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
+
+              if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
+                echo "fast-file upload failed for $FILE"
+                exit 1
+              fi
+
+              DL="https://fast-file.com/${TITLE}/download"
+              TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
+
+              rm -f "$RAW" "$OUT"
+            done < <(jq -r '.untagged_media[]' "$FILE")
+          fi
 
           jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
           mv "${FILE}.tmp" "$FILE"

@@ -427,6 +427,7 @@ export default async function handler(
             queueId: id,
             isNew: false,
             pingNewSnippet: false,
+            rawFileUrls: newUntaggedUrls,
           });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Failed to trigger tag-videos workflow";
