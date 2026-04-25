@@ -164,7 +164,7 @@ jobs:
             echo "Processing new media from library addition"
             # Start with existing tagged media
             TAG_URLS=$(jq -c '.tagged_media' "$FILE")
-            echo "$RAW_FILE_URLS" | jq -r '.[]' | while IFS= read -r URL; do
+            while IFS= read -r URL; do
               [ -z "$URL" ] && continue
 
               echo "Downloading from URL: $URL"
@@ -250,7 +250,7 @@ jobs:
               TAG_URLS=$(echo "$TAG_URLS" | jq --arg u "$DL" '. + [$u]')
 
               rm -f "$RAW" "$OUT"
-            done
+            done < <(echo "$RAW_FILE_URLS" | jq -r '.[]')
           else
             echo "Processing all untagged media (new snippet)"
             while IFS= read -r URL; do
