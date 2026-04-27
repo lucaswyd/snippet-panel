@@ -169,11 +169,21 @@ jobs:
 
               echo "Downloading from URL: $URL"
 
-              # Normalize to https://fast-file.com/<id>/download
-              if [[ "$URL" =~ ([a-f0-9]{8,}) ]]; then
-                ID="${BASH_REMATCH[1]}"
-                URL="https://fast-file.com/${ID}/download"
+              # Normalize to https://fast-file.com/<id>/download (strict 8-char id)
+              # Ensure URL has a scheme
+              if [[ "$URL" != http* ]]; then
+                URL="https://${URL#*/}"
               fi
+
+              # Extract exactly 8 hex chars before /download
+              ID=$(echo "$URL" | sed -E 's#.*/([a-f0-9]{8})/download.*#\1#')
+
+              if [[ ! "$ID" =~ ^[a-f0-9]{8}$ ]]; then
+                echo "ERROR: Could not extract valid 8-char ID from URL: $URL"
+                exit 1
+              fi
+
+              URL="https://fast-file.com/${ID}/download"
 
               i=$((i+1))
 
@@ -259,11 +269,21 @@ jobs:
 
               echo "Downloading from URL: $URL"
 
-              # Normalize to https://fast-file.com/<id>/download
-              if [[ "$URL" =~ ([a-f0-9]{8,}) ]]; then
-                ID="${BASH_REMATCH[1]}"
-                URL="https://fast-file.com/${ID}/download"
+              # Normalize to https://fast-file.com/<id>/download (strict 8-char id)
+              # Ensure URL has a scheme
+              if [[ "$URL" != http* ]]; then
+                URL="https://${URL#*/}"
               fi
+
+              # Extract exactly 8 hex chars before /download
+              ID=$(echo "$URL" | sed -E 's#.*/([a-f0-9]{8})/download.*#\1#')
+
+              if [[ ! "$ID" =~ ^[a-f0-9]{8}$ ]]; then
+                echo "ERROR: Could not extract valid 8-char ID from URL: $URL"
+                exit 1
+              fi
+
+              URL="https://fast-file.com/${ID}/download"
 
               i=$((i+1))
 
