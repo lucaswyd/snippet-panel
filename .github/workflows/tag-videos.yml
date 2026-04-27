@@ -169,8 +169,10 @@ jobs:
 
               echo "Downloading from URL: $URL"
 
-              # Fix malformed URLs - strip any protocol/domain prefix from the path
-              if [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
+              # Fix malformed URLs - extract just the ID part if URL contains fast-file.com
+              if [[ "$URL" =~ fast-file\.com/([a-f0-9]+)/download ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
+              elif [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
                 URL="https://fast-file.com/${BASH_REMATCH[1]}"
               fi
 
@@ -258,8 +260,10 @@ jobs:
 
               echo "Downloading from URL: $URL"
 
-              # Fix malformed URLs - strip any protocol/domain prefix from the path
-              if [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
+              # Fix malformed URLs - extract just the ID part if URL contains fast-file.com
+              if [[ "$URL" =~ fast-file\.com/([a-f0-9]+)/download ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
+              elif [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
                 URL="https://fast-file.com/${BASH_REMATCH[1]}"
               fi
 
