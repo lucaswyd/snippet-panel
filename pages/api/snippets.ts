@@ -350,6 +350,12 @@ export default async function handler(
         (url) => !currentUntaggedSet.has(url)
       );
 
+      console.log("=== DEBUG: Adding media to snippet ===");
+      console.log("Current untagged_media:", currentSnippet.untagged_media);
+      console.log("New media from request:", media);
+      console.log("New untagged URLs to add:", newUntaggedUrls);
+      console.log("=== END DEBUG ===");
+
       let updated: Snippet;
 
       if (newUntaggedUrls.length > 0) {

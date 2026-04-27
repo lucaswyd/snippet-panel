@@ -103,6 +103,9 @@ jobs:
           IS_NEW_SNIPPET=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.isNew // false')
           PING_NEW_SNIPPET=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.pingNewSnippet // false')
           RAW_FILE_URLS=$(echo '${{ toJson(github.event.client_payload) }}' | jq -r '.rawFileUrls // empty')
+          echo "=== DEBUG: RAW_FILE_URLS from payload ==="
+          echo "$RAW_FILE_URLS"
+          echo "=== END DEBUG ==="
 
           if [ -z "$SNIPPET_PATH" ] || [ -z "$QUEUE_ID" ]; then
             echo "ERROR: Missing snippetPath or queueId in payload"
@@ -121,6 +124,9 @@ jobs:
 
           TAGGED_LEN=$(jq '.tagged_media | length' "$FILE")
           UNTAG_LEN=$(jq '.untagged_media | length' "$FILE")
+          echo "=== DEBUG: untagged_media from JSON file ==="
+          jq -r '.untagged_media[]' "$FILE" | while IFS= read -r url; do echo "  URL: $url"; done
+          echo "=== END DEBUG ==="
           SNIPPET_TITLE=$(jq -r '.title // "Untitled"' "$FILE")
           SAFE_TITLE=$(printf '%s' "$SNIPPET_TITLE" | tr '\n' ' ' | sed 's/[\\/:*?"<>|]/ /g; s/[[:space:]]\+/ /g; s/^ *//; s/ *$//')
           [ -n "$SAFE_TITLE" ] || SAFE_TITLE="Untitled"
@@ -167,16 +173,25 @@ jobs:
             while IFS= read -r URL; do
               [ -z "$URL" ] && continue
 
-              echo "Downloading from URL: $URL"
+              echo "=== DEBUG: Processing URL from rawFileUrls ==="
+              echo "  Original URL: '$URL'"
 
               # Normalize to https://fast-file.com/<id>/download (strict 8-char id)
               # Ensure URL has a scheme
               if [[ "$URL" != http* ]]; then
+                echo "  URL does not start with http*, applying normalization"
+                echo "  After \${URL#*/}: '${URL#*/}'"
                 URL="https://${URL#*/}"
+                echo "  After normalization: '$URL'"
+              else
+                echo "  URL already has http scheme, skipping normalization"
               fi
+
+              echo "Downloading from URL: $URL"
 
               # Extract exactly 8 hex chars before /download
               ID=$(echo "$URL" | sed -E 's#.*/([a-f0-9]{8})/download.*#\1#')
+              echo "  Extracted ID: '$ID'"
 
               if [[ ! "$ID" =~ ^[a-f0-9]{8}$ ]]; then
                 echo "ERROR: Could not extract valid 8-char ID from URL: $URL"
@@ -184,6 +199,8 @@ jobs:
               fi
 
               URL="https://fast-file.com/${ID}/download"
+              echo "  Final reconstructed URL: '$URL'"
+              echo "=== END DEBUG ==="
 
               i=$((i+1))
 
@@ -267,16 +284,25 @@ jobs:
             while IFS= read -r URL; do
               [ -z "$URL" ] && continue
 
-              echo "Downloading from URL: $URL"
+              echo "=== DEBUG: Processing URL from untagged_media (JSON) ==="
+              echo "  Original URL: '$URL'"
 
               # Normalize to https://fast-file.com/<id>/download (strict 8-char id)
               # Ensure URL has a scheme
               if [[ "$URL" != http* ]]; then
+                echo "  URL does not start with http*, applying normalization"
+                echo "  After \${URL#*/}: '${URL#*/}'"
                 URL="https://${URL#*/}"
+                echo "  After normalization: '$URL'"
+              else
+                echo "  URL already has http scheme, skipping normalization"
               fi
+
+              echo "Downloading from URL: $URL"
 
               # Extract exactly 8 hex chars before /download
               ID=$(echo "$URL" | sed -E 's#.*/([a-f0-9]{8})/download.*#\1#')
+              echo "  Extracted ID: '$ID'"
 
               if [[ ! "$ID" =~ ^[a-f0-9]{8}$ ]]; then
                 echo "ERROR: Could not extract valid 8-char ID from URL: $URL"
@@ -284,6 +310,8 @@ jobs:
               fi
 
               URL="https://fast-file.com/${ID}/download"
+              echo "  Final reconstructed URL: '$URL'"
+              echo "=== END DEBUG ==="
 
               i=$((i+1))
 
@@ -364,7 +392,11 @@ jobs:
             done < <(jq -r '.untagged_media[]' "$FILE")
           fi
 
+          echo "=== DEBUG: Writing tagged_media back to file ==="
+          echo "  TAG_URLS array: $TAG_URLS"
           jq --argjson tagged "$TAG_URLS" 'del(._queueId) | .tagged_media = $tagged' "$FILE" > "${FILE}.tmp"
+          echo "  File updated"
+          echo "=== END DEBUG ==="
           mv "${FILE}.tmp" "$FILE"
 
           cd snippets-repo

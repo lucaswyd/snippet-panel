@@ -178,6 +178,11 @@ export default function SnippetLibrary() {
     if (!selectedRecord || !draft) return;
     setSaving(true);
     setError(null);
+
+    console.log("=== DEBUG: SnippetLibrary saveDraft ===");
+    console.log("Draft media array:", draft.media);
+    console.log("=== END DEBUG ===");
+
     try {
       const res = await fetch("/api/snippets", {
         method: "PATCH",
@@ -360,6 +365,10 @@ export default function SnippetLibrary() {
             typeof crypto !== "undefined" && crypto.randomUUID
               ? crypto.randomUUID()
               : `media-${Date.now()}`;
+          console.log("=== DEBUG: SnippetLibrary adding uploaded media ===");
+          console.log("Upload result:", result);
+          console.log("downloadUrl:", result.downloadUrl);
+          console.log("=== END DEBUG ===");
           setDraft((current) =>
             current
               ? {

@@ -103,6 +103,13 @@ export default function SnippetForm() {
             .split(/\r?\n|,/)
             .map((url) => url.trim())
             .filter(Boolean);
+
+    console.log("=== DEBUG: SnippetForm submit ===");
+    console.log("Media mode:", mediaMode);
+    console.log("Uploads:", uploads);
+    console.log("URL text:", urlText);
+    console.log("Final URLs array:", urls);
+    console.log("=== END DEBUG ===");
     if (!title.trim() || !prod.trim()) {
       setSubmitError("Title and producer are required.");
       return;

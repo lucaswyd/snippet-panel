@@ -75,6 +75,11 @@ export default async function handler(
     tagged_media: [],
     _queueId: id,
   };
+
+  console.log("=== DEBUG: Creating snippet with URLs ===");
+  console.log("rawFileUrls from request:", body.rawFileUrls);
+  console.log("untagged_media in snippet:", snippet.untagged_media);
+  console.log("=== END DEBUG ===");
   const feat = body.feat?.trim();
   if (feat) snippet.feat = feat;
 

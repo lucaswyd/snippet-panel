@@ -90,12 +90,20 @@ export default async function handler(
   }
 
   const list = json.files ?? [];
+  console.log("=== DEBUG: Server-side upload processing ===");
+  console.log("Fast-file response:", json);
+  console.log("Files array:", list);
   const out = list.map((f) => {
     const title = f.title ?? "";
     const page = title ? `https://fast-file.com/${title}` : "";
     const downloadUrl = title ? `https://fast-file.com/${title}/download` : "";
+    console.log("File entry:", f);
+    console.log("Title:", title);
+    console.log("Constructed downloadUrl:", downloadUrl);
     return { url: page, downloadUrl };
   });
+  console.log("Final output:", out);
+  console.log("=== END DEBUG ===");
 
   return res.status(200).json({ files: out });
 }

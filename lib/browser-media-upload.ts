@@ -13,8 +13,23 @@ function downloadUrlFromFastFileJson(text: string): string | undefined {
   try {
     const data = JSON.parse(text) as { files?: { title?: string }[] };
     const title = data.files?.[0]?.title;
-    if (title) return `https://fast-file.com/${title}/download`;
-  } catch {
+    console.log("=== DEBUG: fast-file API response ===");
+    console.log("Raw response text:", text);
+    console.log("Parsed data:", data);
+    console.log("Extracted title:", title);
+    if (title) {
+      const downloadUrl = `https://fast-file.com/${title}/download`;
+      console.log("Constructed downloadUrl:", downloadUrl);
+      console.log("=== END DEBUG ===");
+      return downloadUrl;
+    }
+    console.log("No title found, returning undefined");
+    console.log("=== END DEBUG ===");
+  } catch (e) {
+    console.log("=== DEBUG: Failed to parse fast-file response ===");
+    console.log("Error:", e);
+    console.log("Raw text:", text);
+    console.log("=== END DEBUG ===");
     /* ignore */
   }
   return undefined;
