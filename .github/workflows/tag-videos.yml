@@ -249,7 +249,7 @@ jobs:
 
               FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
 
-              ffmpeg -n -y -i "$RAW" \
+              ffmpeg -y -i "$RAW" < /dev/null \
                 -map 0:v:0 -map 0:a:0? \
                 -dn -sn \
                 -map_metadata -1 -map_chapters -1 \
@@ -360,7 +360,7 @@ jobs:
 
               FILTER="drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.05+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.45+h*0.03,drawtext=fontfile='${FONT}':text='Prada Hub':fontsize=h*0.03:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85,drawtext=fontfile='${FONT}':text='discord.gg/Pradabagshawty':fontsize=h*0.024:fontcolor=white@0.5:x=(w-text_w)/2:y=h*0.85+h*0.03"
 
-              ffmpeg -n -y -i "$RAW" \
+              ffmpeg -y -i "$RAW" < /dev/null \
                 -map 0:v:0 -map 0:a:0? \
                 -dn -sn \
                 -map_metadata -1 -map_chapters -1 \
