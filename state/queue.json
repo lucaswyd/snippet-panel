@@ -1,1 +1,33 @@
-[]
+[
+  {
+    "id": "2cf52133-7ba7-4cbf-bcb1-462f9b54bd67",
+    "snippetPath": "snippets/In a Minute.json",
+    "snippet": {
+      "createdAt": "2026-04-27T16:32:40.722Z",
+      "title": "In a Minute",
+      "titleConfirmed": true,
+      "prod": "TRGC",
+      "prodConfirmed": true,
+      "date": "2026-04-20",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/7af29da0/download",
+        "https://fast-file.com/d139b926/download",
+        "https://fast-file.com/f1aa89ee/download",
+        "https://fast-file.com/1fe15c3f/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "2cf52133-7ba7-4cbf-bcb1-462f9b54bd67"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-04-27T16:32:40.722Z",
+    "rawFileUrls": [
+      "https://fast-file.com/7af29da0/download",
+      "https://fast-file.com/d139b926/download",
+      "https://fast-file.com/f1aa89ee/download",
+      "https://fast-file.com/1fe15c3f/download"
+    ]
+  }
+]
