@@ -169,11 +169,16 @@ jobs:
 
               echo "Downloading from URL: $URL"
 
-              # Fix malformed URLs - extract just the ID part if URL contains fast-file.com
-              if [[ "$URL" =~ fast-file\.com/([a-f0-9]+)/download ]]; then
+              # Fix malformed URLs - extract just the ID part
+              # Match: full URL, URL without protocol, or just the path
+              if [[ "$URL" =~ fast-file\.com/([a-f0-9]+)/?download? ]]; then
                 URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
-              elif [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
-                URL="https://fast-file.com/${BASH_REMATCH[1]}"
+              elif [[ "$URL" =~ ^https?://[^/]+/([a-f0-9]+)/download ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
+              elif [[ "$URL" =~ ^/?([a-f0-9]+)/download ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
+              elif [[ "$URL" =~ ^/?([a-f0-9]+)$ ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
               fi
 
               i=$((i+1))
@@ -260,11 +265,16 @@ jobs:
 
               echo "Downloading from URL: $URL"
 
-              # Fix malformed URLs - extract just the ID part if URL contains fast-file.com
-              if [[ "$URL" =~ fast-file\.com/([a-f0-9]+)/download ]]; then
+              # Fix malformed URLs - extract just the ID part
+              # Match: full URL, URL without protocol, or just the path
+              if [[ "$URL" =~ fast-file\.com/([a-f0-9]+)/?download? ]]; then
                 URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
-              elif [[ "$URL" =~ ^https?://[^/]+/(.+)$ ]]; then
-                URL="https://fast-file.com/${BASH_REMATCH[1]}"
+              elif [[ "$URL" =~ ^https?://[^/]+/([a-f0-9]+)/download ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
+              elif [[ "$URL" =~ ^/?([a-f0-9]+)/download ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
+              elif [[ "$URL" =~ ^/?([a-f0-9]+)$ ]]; then
+                URL="https://fast-file.com/${BASH_REMATCH[1]}/download"
               fi
 
               i=$((i+1))
