@@ -86,5 +86,34 @@
       "https://fast-file.com/3ce08a8b/download",
       "https://fast-file.com/9221e856/download"
     ]
+  },
+  {
+    "id": "1a660077-3512-49a4-8ba7-db08eb799d43",
+    "snippetPath": "snippets/999.json",
+    "snippet": {
+      "createdAt": "2026-04-27T20:28:35.907Z",
+      "title": "999",
+      "titleConfirmed": true,
+      "prod": "9999",
+      "prodConfirmed": true,
+      "date": "2026-05-27",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/a52b0825/download",
+        "https://fast-file.com/582483f0/download",
+        "https://fast-file.com/95729dfd/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "1a660077-3512-49a4-8ba7-db08eb799d43"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-04-27T20:28:35.907Z",
+    "rawFileUrls": [
+      "https://fast-file.com/a52b0825/download",
+      "https://fast-file.com/582483f0/download",
+      "https://fast-file.com/95729dfd/download"
+    ]
   }
 ]
