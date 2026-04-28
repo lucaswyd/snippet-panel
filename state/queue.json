@@ -144,5 +144,30 @@
       "https://fast-file.com/9be0f94f/download",
       "https://fast-file.com/99995c5c/download"
     ]
+  },
+  {
+    "id": "7cdd955f-bd70-47be-9887-4e52d88034ae",
+    "snippetPath": "snippets/First Place.json",
+    "snippet": {
+      "createdAt": "2026-04-28T04:13:27.039Z",
+      "title": "First Place",
+      "titleConfirmed": false,
+      "prod": "WhyCeg",
+      "prodConfirmed": false,
+      "date": "2026-04-27",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/334f0056/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "7cdd955f-bd70-47be-9887-4e52d88034ae"
+    },
+    "status": "tagging",
+    "isNew": true,
+    "pingNewSnippet": false,
+    "createdAt": "2026-04-28T04:13:27.039Z",
+    "rawFileUrls": [
+      "https://fast-file.com/334f0056/download"
+    ]
   }
 ]
