@@ -26,13 +26,22 @@ export function getGofileToken(): string {
 
 export async function getGofileContent(contentId: string): Promise<GofileContentResponse> {
   const token = getGofileToken();
-  const url = `${GOFILE_API_URL}/contents/${contentId}${token ? `?token=${token}` : ""}`;
-  
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Gofile API error: ${response.status}`);
+
+  if (!contentId) {
+    throw new Error("Invalid Gofile contentId");
   }
-  
+
+  const response = await fetch(`${GOFILE_API_URL}/contents/${contentId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Gofile API error: ${response.status} - ${text}`);
+  }
+
   return response.json();
 }
 
@@ -49,18 +58,28 @@ export function isGofileUrl(url: string): boolean {
 }
 
 export function extractGofileContentId(url: string): string | null {
-  const match = url.match(/gofile\.io\/d\/([a-zA-Z0-9]+)/);
-  return match ? match[1] : null;
+  try {
+    const parsed = new URL(url);
+    const match = parsed.pathname.match(/^\/d\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function fetchGofileFiles(contentId: string): Promise<Array<{ name: string; link: string; blob: Blob }>> {
   const content = await getGofileContent(contentId);
+  console.log("Gofile contentId:", contentId);
   
   if (content.status !== "ok") {
     throw new Error("Failed to fetch gofile content");
   }
   
   const files: Array<{ name: string; link: string; blob: Blob }> = [];
+
+  if (!content.data?.contents) {
+    throw new Error("No contents found in Gofile response");
+  }
   
   for (const [fileId, fileInfo] of Object.entries(content.data.contents)) {
     if (fileInfo.type === "file") {
