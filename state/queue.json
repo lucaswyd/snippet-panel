@@ -498,5 +498,30 @@
     "rawFileUrls": [
       "https://fast-file.com/78444208/download"
     ]
+  },
+  {
+    "id": "aeee65ef-8b3f-4b75-8536-8db915f20131",
+    "snippetPath": "snippets/POP SUM.json",
+    "snippet": {
+      "createdAt": "2026-05-04T04:23:33.768Z",
+      "title": "POP SUM",
+      "titleConfirmed": true,
+      "prod": "Bugg",
+      "prodConfirmed": true,
+      "date": "2026-04-21",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/3e0ebd86/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "aeee65ef-8b3f-4b75-8536-8db915f20131"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T04:23:33.768Z",
+    "rawFileUrls": [
+      "https://fast-file.com/3e0ebd86/download"
+    ]
   }
 ]
