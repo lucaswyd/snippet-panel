@@ -320,5 +320,30 @@
     "rawFileUrls": [
       "https://fast-file.com/b0d78963/download"
     ]
+  },
+  {
+    "id": "2583e092-e258-435d-b46c-04c7ed041c54",
+    "snippetPath": "snippets/Triple Cross.json",
+    "snippet": {
+      "createdAt": "2026-05-04T02:34:17.411Z",
+      "title": "Triple Cross",
+      "titleConfirmed": false,
+      "prod": "Al Chapo & WhyCeg",
+      "prodConfirmed": true,
+      "date": "2026-05-01",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/71738c84/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "2583e092-e258-435d-b46c-04c7ed041c54"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T02:34:17.411Z",
+    "rawFileUrls": [
+      "https://fast-file.com/71738c84/download"
+    ]
   }
 ]
