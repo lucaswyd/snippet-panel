@@ -1220,5 +1220,30 @@
     "rawFileUrls": [
       "https://fast-file.com/866d5397/download"
     ]
+  },
+  {
+    "id": "0d30b0d6-c85d-4acb-8fd9-f66d2e038f90",
+    "snippetPath": "snippets/2 Pairs.json",
+    "snippet": {
+      "createdAt": "2026-05-04T06:46:02.738Z",
+      "title": "2 Pairs",
+      "titleConfirmed": true,
+      "prod": "TRGC",
+      "prodConfirmed": true,
+      "date": "2026-04-09",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/6b65aa41/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "0d30b0d6-c85d-4acb-8fd9-f66d2e038f90"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T06:46:02.738Z",
+    "rawFileUrls": [
+      "https://fast-file.com/6b65aa41/download"
+    ]
   }
 ]
