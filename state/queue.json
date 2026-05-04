@@ -124,5 +124,48 @@
     "rawFileUrls": [
       "https://cdn.discordapp.com/attachments/1491898537926070472/1500674356987039764/Crank_Up_Snippet_1.mov?ex=69f94b67&is=69f7f9e7&hm=f8004d477b3d710ea31955639b2aea255e3e318053e63ae3911313f5395ca618&"
     ]
+  },
+  {
+    "id": "47003d14-d376-4402-bd08-7f1739735f5b",
+    "snippetPath": "snippets/Crank Up.json",
+    "snippet": {
+      "createdAt": "2026-05-04T01:46:41.643Z",
+      "title": "Crank Up",
+      "titleConfirmed": false,
+      "prod": "WhyCeg & SenseiATL",
+      "prodConfirmed": true,
+      "date": "2026-05-03",
+      "released": false,
+      "untagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500674356987039764/Crank_Up_Snippet_1.mov?ex=69f94b67&is=69f7f9e7&hm=f8004d477b3d710ea31955639b2aea255e3e318053e63ae3911313f5395ca618&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&"
+      ],
+      "tagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500674305556746310/Crank_Up_Snippet_1.mp4?ex=69f94b5b&is=69f7f9db&hm=5aff6ef5d3111421de80a249c89ebe7cad0a7fadd2566a00d3feb3abbe693d2f&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500676398631616542/First_Place_Snippet_2.mp4?ex=69f94d4e&is=69f7fbce&hm=748a98254ad39e90029dd6bdbdc3e78aaac71f50d826537d07a9c13761f177b9&"
+      ],
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1500675399716438096"
+          ],
+          "separatorId": "1500675401062809600"
+        },
+        "private": {
+          "messageIds": [
+            "1500675174670930123"
+          ],
+          "separatorId": "1500675175799193631"
+        }
+      },
+      "_queueId": "47003d14-d376-4402-bd08-7f1739735f5b"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T01:52:32.072Z",
+    "rawFileUrls": [
+      "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&"
+    ]
   }
 ]
