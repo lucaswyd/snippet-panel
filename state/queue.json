@@ -1676,5 +1676,31 @@
     "rawFileUrls": [
       "https://fast-file.com/b869c4a6/download"
     ]
+  },
+  {
+    "id": "725a2268-3ce4-4ace-9b26-df07b1f78e83",
+    "snippetPath": "snippets/Go Bestfriend.json",
+    "snippet": {
+      "createdAt": "2026-05-04T15:12:16.438Z",
+      "title": "Go Bestfriend",
+      "titleConfirmed": true,
+      "prod": "Shiro",
+      "prodConfirmed": true,
+      "date": "2024-05-07",
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/517c8f65/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "725a2268-3ce4-4ace-9b26-df07b1f78e83",
+      "feat": "NDO Dee"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T15:12:16.438Z",
+    "rawFileUrls": [
+      "https://fast-file.com/517c8f65/download"
+    ]
   }
 ]
