@@ -167,5 +167,48 @@
     "rawFileUrls": [
       "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&"
     ]
+  },
+  {
+    "id": "a8c13252-b8e7-4b01-b8bc-0e87539f1cec",
+    "snippetPath": "snippets/First Place.json",
+    "snippet": {
+      "createdAt": "2026-04-28T04:13:27.039Z",
+      "title": "First Place",
+      "titleConfirmed": false,
+      "prod": "WhyCeg",
+      "prodConfirmed": false,
+      "date": "2026-04-27",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/334f0056/download",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/b97a5a3a/download",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500676398631616542/First_Place_Snippet_2.mp4?ex=69f94d4e&is=69f7fbce&hm=748a98254ad39e90029dd6bdbdc3e78aaac71f50d826537d07a9c13761f177b9&"
+      ],
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1498538089340076163"
+          ],
+          "separatorId": "1500675386797719755"
+        },
+        "private": {
+          "messageIds": [
+            "1498537790051188747"
+          ],
+          "separatorId": "1500675161907794021"
+        }
+      },
+      "_queueId": "a8c13252-b8e7-4b01-b8bc-0e87539f1cec"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T01:52:59.725Z",
+    "rawFileUrls": [
+      "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&"
+    ]
   }
 ]
