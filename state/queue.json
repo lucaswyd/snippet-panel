@@ -210,5 +210,30 @@
     "rawFileUrls": [
       "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&"
     ]
+  },
+  {
+    "id": "4f65678b-e426-4dd0-b464-ef4e9bb2a129",
+    "snippetPath": "snippets/Triple Cross.json",
+    "snippet": {
+      "createdAt": "2026-05-04T02:00:19.269Z",
+      "title": "Triple Cross",
+      "titleConfirmed": false,
+      "prod": "WhyCeg",
+      "prodConfirmed": false,
+      "date": "2026-05-01",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/ecd471ce/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "4f65678b-e426-4dd0-b464-ef4e9bb2a129"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T02:00:19.269Z",
+    "rawFileUrls": [
+      "https://fast-file.com/ecd471ce/download"
+    ]
   }
 ]
