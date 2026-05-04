@@ -669,5 +669,56 @@
     "rawFileUrls": [
       "https://fast-file.com/b08db9a8/download"
     ]
+  },
+  {
+    "id": "d4b94fd8-5be8-4cd5-bb18-2e6c5a9c3855",
+    "snippetPath": "snippets/Perky Nap.json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "Perky Nap",
+      "titleConfirmed": true,
+      "feat": "Babystaydown",
+      "prod": "Dstarkel",
+      "prodConfirmed": true,
+      "date": "2025-07-21",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1497084661938262258"
+          ],
+          "separatorId": "1497084663150415922"
+        },
+        "private": {
+          "messageIds": [
+            "1497087665101865032"
+          ],
+          "separatorId": "1497087666607493221"
+        }
+      },
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/8ae28646/download",
+        "https://fast-file.com/47e8501f/download",
+        "https://fast-file.com/02304f32/download",
+        "https://fast-file.com/fcd5950b/download",
+        "https://fast-file.com/bebbc638/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/ea089c2b/download",
+        "https://fast-file.com/bb5c85d3/download",
+        "https://fast-file.com/e01c38b9/download",
+        "https://fast-file.com/3184f340/download"
+      ],
+      "_queueId": "d4b94fd8-5be8-4cd5-bb18-2e6c5a9c3855"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T05:55:40.678Z",
+    "rawFileUrls": [
+      "https://fast-file.com/bebbc638/download"
+    ]
   }
 ]
