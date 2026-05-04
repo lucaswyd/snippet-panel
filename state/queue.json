@@ -1476,5 +1476,33 @@
     "rawFileUrls": [
       "https://fast-file.com/42a2612a/download"
     ]
+  },
+  {
+    "id": "9f4881fd-2f6f-483e-9acf-26946afe1271",
+    "snippetPath": "snippets/Love Birds.json",
+    "snippet": {
+      "createdAt": "2026-05-04T15:00:07.643Z",
+      "title": "Love Birds",
+      "titleConfirmed": true,
+      "prod": "Blackcard",
+      "prodConfirmed": true,
+      "date": "2024-12-25",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/525cc8dc/download",
+        "https://fast-file.com/47cf3f15/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "9f4881fd-2f6f-483e-9acf-26946afe1271",
+      "feat": "Imsomarcus"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T15:00:07.643Z",
+    "rawFileUrls": [
+      "https://fast-file.com/525cc8dc/download",
+      "https://fast-file.com/47cf3f15/download"
+    ]
   }
 ]
