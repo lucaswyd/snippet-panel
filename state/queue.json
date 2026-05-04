@@ -1747,12 +1747,13 @@
       "_queueId": "417ad430-3ffd-4545-a932-ede947b6ebfb",
       "feat": "Nino Paid"
     },
-    "status": "tagging",
+    "status": "error",
     "isNew": false,
     "pingNewSnippet": false,
     "createdAt": "2026-05-04T15:15:46.273Z",
     "rawFileUrls": [
       "https://fast-file.com/eae22e6e/download"
-    ]
+    ],
+    "errorMessage": "is at f0ced23bc575947f53c33b385af301a83702648c but expected 15630bc6b724d0d2f34b434854906a86f6d3886c - https://docs.github.com/rest/repos/contents#create-or-update-file-contents"
   }
 ]
