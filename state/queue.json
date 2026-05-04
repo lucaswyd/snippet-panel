@@ -1195,5 +1195,30 @@
     "rawFileUrls": [
       "https://fast-file.com/ff97ea2a/download"
     ]
+  },
+  {
+    "id": "8b98b572-f0d8-4e3b-bcfe-4cd33e264287",
+    "snippetPath": "snippets/Fashion Killa.json",
+    "snippet": {
+      "createdAt": "2026-05-04T06:42:10.756Z",
+      "title": "Fashion Killa",
+      "titleConfirmed": true,
+      "prod": "Mxrtality & Ev7n",
+      "prodConfirmed": true,
+      "date": "2026-04-10",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/866d5397/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "8b98b572-f0d8-4e3b-bcfe-4cd33e264287"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T06:42:10.756Z",
+    "rawFileUrls": [
+      "https://fast-file.com/866d5397/download"
+    ]
   }
 ]
