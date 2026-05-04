@@ -58,5 +58,30 @@
     "rawFileUrls": [
       "https://cdn.discordapp.com/attachments/1491898537926070472/1500674356987039764/Crank_Up_Snippet_1.mov?ex=69f94b67&is=69f7f9e7&hm=f8004d477b3d710ea31955639b2aea255e3e318053e63ae3911313f5395ca618&"
     ]
+  },
+  {
+    "id": "8ec8ccc6-92dd-4500-9072-bc8ba205a6cd",
+    "snippetPath": "snippets/Crank Up.json",
+    "snippet": {
+      "createdAt": "2026-05-04T01:46:41.643Z",
+      "title": "Crank Up",
+      "titleConfirmed": false,
+      "prod": "WhyCeg & SenseiATL",
+      "prodConfirmed": true,
+      "date": "2026-05-03",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/4a1f4d9d/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "8ec8ccc6-92dd-4500-9072-bc8ba205a6cd"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T01:46:41.643Z",
+    "rawFileUrls": [
+      "https://fast-file.com/4a1f4d9d/download"
+    ]
   }
 ]
