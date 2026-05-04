@@ -1529,5 +1529,52 @@
     "rawFileUrls": [
       "https://fast-file.com/47d6a863/download"
     ]
+  },
+  {
+    "id": "dfb98f49-353f-41a1-8b45-2b46b5dfe2e3",
+    "snippetPath": "snippets/Baby Trip - 3Type.json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "Baby Trip - 3Type",
+      "titleConfirmed": true,
+      "feat": "Pradabagshawty",
+      "prod": "SouljaSpirits & WhyCeg",
+      "prodConfirmed": true,
+      "date": "2025-03-26",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1500747597575360584"
+          ],
+          "separatorId": "1500747598909407242"
+        },
+        "private": {
+          "messageIds": [
+            "1500875631318139100"
+          ],
+          "separatorId": "1500875651740205167"
+        }
+      },
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/22b6b598/download",
+        "https://fast-file.com/6e6ce877/download",
+        "https://fast-file.com/1f078c6f/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/0362847b/download",
+        "https://fast-file.com/73000ec5/download"
+      ],
+      "_queueId": "dfb98f49-353f-41a1-8b45-2b46b5dfe2e3"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T15:04:49.446Z",
+    "rawFileUrls": [
+      "https://fast-file.com/1f078c6f/download"
+    ]
   }
 ]
