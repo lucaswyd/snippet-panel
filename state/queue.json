@@ -1450,5 +1450,31 @@
       "https://fast-file.com/66436c05/download",
       "https://fast-file.com/04af43f8/download"
     ]
+  },
+  {
+    "id": "96c9955d-d1ee-44b5-ac5c-7095d4f57c06",
+    "snippetPath": "snippets/Ghetto Flowers 2.json",
+    "snippet": {
+      "createdAt": "2026-05-04T14:58:12.588Z",
+      "title": "Ghetto Flowers 2",
+      "titleConfirmed": true,
+      "prod": "???",
+      "prodConfirmed": false,
+      "date": "2025-03-19",
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/42a2612a/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "96c9955d-d1ee-44b5-ac5c-7095d4f57c06",
+      "feat": "Yotti"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T14:58:12.588Z",
+    "rawFileUrls": [
+      "https://fast-file.com/42a2612a/download"
+    ]
   }
 ]
