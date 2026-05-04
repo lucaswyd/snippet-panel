@@ -1170,5 +1170,30 @@
     "rawFileUrls": [
       "https://fast-file.com/9efe2ee2/download"
     ]
+  },
+  {
+    "id": "5b575f15-1148-45e1-9809-280dcc6b6789",
+    "snippetPath": "snippets/Ready 4 Smoke.json",
+    "snippet": {
+      "createdAt": "2026-05-04T06:40:06.035Z",
+      "title": "Ready 4 Smoke",
+      "titleConfirmed": false,
+      "prod": "TRGC",
+      "prodConfirmed": true,
+      "date": "2026-04-22",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/ff97ea2a/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "5b575f15-1148-45e1-9809-280dcc6b6789"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T06:40:06.035Z",
+    "rawFileUrls": [
+      "https://fast-file.com/ff97ea2a/download"
+    ]
   }
 ]
