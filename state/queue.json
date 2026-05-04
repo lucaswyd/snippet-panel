@@ -617,5 +617,31 @@
     "rawFileUrls": [
       "https://fast-file.com/0a80e461/download"
     ]
+  },
+  {
+    "id": "60316080-2a14-406a-8d04-16d575d6bd7d",
+    "snippetPath": "snippets/Chopped Perc.json",
+    "snippet": {
+      "createdAt": "2026-05-04T04:32:30.987Z",
+      "title": "Chopped Perc",
+      "titleConfirmed": true,
+      "prod": "SickofCam, Yungzayy & Vmizzy",
+      "prodConfirmed": true,
+      "date": "2026-04-05",
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/2348c29d/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "60316080-2a14-406a-8d04-16d575d6bd7d",
+      "feat": "YoungDabo"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T04:32:30.987Z",
+    "rawFileUrls": [
+      "https://fast-file.com/2348c29d/download"
+    ]
   }
 ]
