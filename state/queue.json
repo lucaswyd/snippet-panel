@@ -425,5 +425,34 @@
       "https://fast-file.com/0df029c5/download",
       "https://fast-file.com/b925a668/download"
     ]
+  },
+  {
+    "id": "04dc3fa8-60ea-43f8-88de-94a19d5c57f1",
+    "snippetPath": "snippets/T-shirt.json",
+    "snippet": {
+      "createdAt": "2026-05-04T04:17:13.778Z",
+      "title": "T-shirt",
+      "titleConfirmed": true,
+      "prod": "WhyCeg & fuckshiro",
+      "prodConfirmed": true,
+      "date": "2026-04-18",
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/83463996/download",
+        "https://fast-file.com/afd5dda5/download",
+        "https://fast-file.com/4083c27f/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "04dc3fa8-60ea-43f8-88de-94a19d5c57f1"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T04:17:13.778Z",
+    "rawFileUrls": [
+      "https://fast-file.com/83463996/download",
+      "https://fast-file.com/afd5dda5/download",
+      "https://fast-file.com/4083c27f/download"
+    ]
   }
 ]
