@@ -1414,12 +1414,13 @@
       "_queueId": "2f184d30-71c9-422d-bedb-f6abadf9c890",
       "feat": "Pradabagshawty"
     },
-    "status": "tagging",
+    "status": "error",
     "isNew": false,
     "pingNewSnippet": false,
     "createdAt": "2026-05-04T14:54:14.479Z",
     "rawFileUrls": [
       "https://fast-file.com/fa285fbf/download"
-    ]
+    ],
+    "errorMessage": "is at f8011a140e9eea21b5504e3c4aad79d066196b68 but expected ec3bfc7421a1d4725d20a4e7c1c052f6d1d4ba3e - https://docs.github.com/rest/repos/contents#create-or-update-file-contents"
   }
 ]
