@@ -235,5 +235,46 @@
     "rawFileUrls": [
       "https://fast-file.com/ecd471ce/download"
     ]
+  },
+  {
+    "id": "9a41bcb2-dc93-41bd-adec-e28055652cf9",
+    "snippetPath": "snippets/Triple Cross.json",
+    "snippet": {
+      "createdAt": "2026-05-04T02:00:19.269Z",
+      "title": "Triple Cross",
+      "titleConfirmed": false,
+      "prod": "WhyCeg",
+      "prodConfirmed": false,
+      "date": "2026-05-01",
+      "released": false,
+      "untagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500677946887770112/Triple_Cross_Snippet_1.mov?ex=69f94ebf&is=69f7fd3f&hm=746a7f25a76c3d79fe23a77fdc46facdde08fafd85d44b1f0ed09de5ef4f8344&"
+      ],
+      "tagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500678516742815906/Triple_Cross_Snippet_1.mp4?ex=69f94f47&is=69f7fdc7&hm=5e386852e8dbbd90331b911c5254b0591fd6ed19ef95506480f19424144d3c52&"
+      ],
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1500678724927094874"
+          ],
+          "separatorId": "1500678726705221642"
+        },
+        "private": {
+          "messageIds": [
+            "1500678586884030614"
+          ],
+          "separatorId": "1500678588276539498"
+        }
+      },
+      "_queueId": "9a41bcb2-dc93-41bd-adec-e28055652cf9"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T02:02:06.039Z",
+    "rawFileUrls": [
+      "https://cdn.discordapp.com/attachments/1491898537926070472/1500677946887770112/Triple_Cross_Snippet_1.mov?ex=69f94ebf&is=69f7fd3f&hm=746a7f25a76c3d79fe23a77fdc46facdde08fafd85d44b1f0ed09de5ef4f8344&"
+    ]
   }
 ]
