@@ -372,5 +372,31 @@
       "https://fast-file.com/a70a716e/download",
       "https://fast-file.com/6609a26e/download"
     ]
+  },
+  {
+    "id": "2979a043-71bb-4eb3-8f50-2d9aa1310c34",
+    "snippetPath": "snippets/Bounty.json",
+    "snippet": {
+      "createdAt": "2026-05-04T02:41:42.488Z",
+      "title": "Bounty",
+      "titleConfirmed": false,
+      "prod": "TRGC",
+      "prodConfirmed": true,
+      "date": "2026-05-03",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/a63d3f64/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "2979a043-71bb-4eb3-8f50-2d9aa1310c34",
+      "feat": "1300SAINT"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T02:41:42.488Z",
+    "rawFileUrls": [
+      "https://fast-file.com/a63d3f64/download"
+    ]
   }
 ]
