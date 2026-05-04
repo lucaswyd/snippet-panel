@@ -147,10 +147,11 @@ export default function SnippetForm() {
     }
     setSubmitting(true);
     try {
-      // Process gofile URLs if any
+      // Process gofile URLs if any (DISABLED FOR NOW)
       let processedUrls = urls;
       let processedTaggedUrls = taggedUrls;
       
+      /*
       const hasGofileUrls = urls.some(url => url.includes("gofile.io")) || 
                            taggedUrls.some(url => url.includes("gofile.io"));
       
@@ -191,6 +192,7 @@ export default function SnippetForm() {
           return;
         }
       }
+      */
 
       const res = await fetch("/api/submit", {
         method: "POST",
