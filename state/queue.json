@@ -1548,12 +1548,13 @@
       "_queueId": "de6a742e-c51b-4807-bf58-f08121fea5a1",
       "feat": "Pradabagshawty & Bakkdoeshawty"
     },
-    "status": "tagging",
+    "status": "error",
     "isNew": false,
     "pingNewSnippet": false,
     "createdAt": "2026-05-04T15:03:24.141Z",
     "rawFileUrls": [
       "https://fast-file.com/7d268587/download"
-    ]
+    ],
+    "errorMessage": "is at db7a3616ba509f877476c737d23719fdb9df4949 but expected af521ed80adb2699fa47226936241cbe80863d4b - https://docs.github.com/rest/repos/contents#create-or-update-file-contents"
   }
 ]
