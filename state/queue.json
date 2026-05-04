@@ -1601,5 +1601,30 @@
     "rawFileUrls": [
       "https://fast-file.com/ed3cabdb/download"
     ]
+  },
+  {
+    "id": "40ce1680-44c2-4869-bbe4-f30f9410a273",
+    "snippetPath": "snippets/My Gang.json",
+    "snippet": {
+      "createdAt": "2026-05-04T15:07:57.519Z",
+      "title": "My Gang",
+      "titleConfirmed": true,
+      "prod": "Shiro",
+      "prodConfirmed": true,
+      "date": "2024-10-16",
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/03b7084e/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "40ce1680-44c2-4869-bbe4-f30f9410a273"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T15:07:57.519Z",
+    "rawFileUrls": [
+      "https://fast-file.com/03b7084e/download"
+    ]
   }
 ]
