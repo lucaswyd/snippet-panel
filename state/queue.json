@@ -1343,5 +1343,57 @@
     "rawFileUrls": [
       "https://fast-file.com/ff6c71f7/download"
     ]
+  },
+  {
+    "id": "b03f8867-3272-4548-8fcd-9910653dfed9",
+    "snippetPath": "snippets/Domain Expansion.json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "Domain Expansion",
+      "titleConfirmed": true,
+      "prod": "ev7n & Pradabagshawty",
+      "prodConfirmed": true,
+      "date": "2026-03-10",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1500750792611598427"
+          ],
+          "separatorId": "1500750793756770315"
+        },
+        "private": {
+          "messageIds": [
+            "1500746334737535038",
+            "1500746358993195048"
+          ],
+          "separatorId": "1500746360398282822"
+        }
+      },
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/297696ff/download",
+        "https://fast-file.com/9dc6e6a7/download",
+        "https://fast-file.com/65563ad4/download",
+        "https://fast-file.com/77b1b8dc/download",
+        "https://fast-file.com/2feb9b27/download",
+        "https://fast-file.com/e3f9b344/download",
+        "https://fast-file.com/28d9b44a/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/66182294/download",
+        "https://fast-file.com/b442d680/download",
+        "https://fast-file.com/6eb8dfc3/download"
+      ],
+      "_queueId": "b03f8867-3272-4548-8fcd-9910653dfed9"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T14:50:01.838Z",
+    "rawFileUrls": [
+      "https://fast-file.com/28d9b44a/download"
+    ]
   }
 ]
