@@ -567,5 +567,30 @@
     "rawFileUrls": [
       "https://fast-file.com/d5ff09df/download"
     ]
+  },
+  {
+    "id": "56677bb0-5bcd-4ed6-980a-e66bb5fe58d7",
+    "snippetPath": "snippets/Sore Loser.json",
+    "snippet": {
+      "createdAt": "2026-05-04T04:27:22.877Z",
+      "title": "Sore Loser",
+      "titleConfirmed": false,
+      "prod": "Whyceg",
+      "prodConfirmed": true,
+      "date": "2026-04-19",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/785ce95a/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "56677bb0-5bcd-4ed6-980a-e66bb5fe58d7"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T04:27:22.877Z",
+    "rawFileUrls": [
+      "https://fast-file.com/785ce95a/download"
+    ]
   }
 ]
