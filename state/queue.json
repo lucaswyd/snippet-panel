@@ -1529,5 +1529,31 @@
     "rawFileUrls": [
       "https://fast-file.com/47d6a863/download"
     ]
+  },
+  {
+    "id": "de6a742e-c51b-4807-bf58-f08121fea5a1",
+    "snippetPath": "snippets/Imsomarcus - Opp Pack.json",
+    "snippet": {
+      "createdAt": "2026-05-04T15:03:24.141Z",
+      "title": "Imsomarcus - Opp Pack",
+      "titleConfirmed": true,
+      "prod": "Blackcard",
+      "prodConfirmed": true,
+      "date": "2024-10-16",
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/7d268587/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "de6a742e-c51b-4807-bf58-f08121fea5a1",
+      "feat": "Pradabagshawty & Bakkdoeshawty"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T15:03:24.141Z",
+    "rawFileUrls": [
+      "https://fast-file.com/7d268587/download"
+    ]
   }
 ]
