@@ -17,6 +17,8 @@ type SubmitBody = {
   isNew: boolean;
   pingNewSnippet?: boolean;
   rawFileUrls: string[];
+  skipQueue?: boolean;
+  taggedFileUrls?: string[];
 };
 
 export default async function handler(
@@ -41,6 +43,14 @@ export default async function handler(
   if (!Array.isArray(body.rawFileUrls) || body.rawFileUrls.length === 0) {
     return res.status(400).json({ error: "At least one file URL required" });
   }
+  if (body.skipQueue) {
+    if (!Array.isArray(body.taggedFileUrls) || body.taggedFileUrls.length === 0) {
+      return res.status(400).json({ error: "Tagged URLs required when skipping queue" });
+    }
+    if (body.rawFileUrls.length !== body.taggedFileUrls.length) {
+      return res.status(400).json({ error: "Untagged and tagged URLs must have matching counts" });
+    }
+  }
 
   const id = uuidv4();
   const createdAt = new Date().toISOString();
@@ -63,6 +73,9 @@ export default async function handler(
     }
   }
 
+  const skipQueue = Boolean(body.skipQueue);
+  const taggedMedia = skipQueue && Array.isArray(body.taggedFileUrls) ? body.taggedFileUrls : [];
+
   const snippet: Snippet = {
     createdAt,
     title: body.title.trim(),
@@ -72,17 +85,38 @@ export default async function handler(
     date: body.date,
     released: Boolean(body.released),
     untagged_media: [...body.rawFileUrls],
-    tagged_media: [],
-    _queueId: id,
+    tagged_media: taggedMedia,
+    ...(skipQueue ? {} : { _queueId: id }),
   };
 
   console.log("=== DEBUG: Creating snippet with URLs ===");
   console.log("rawFileUrls from request:", body.rawFileUrls);
+  console.log("taggedFileUrls from request:", body.taggedFileUrls);
+  console.log("skipQueue:", skipQueue);
   console.log("untagged_media in snippet:", snippet.untagged_media);
+  console.log("tagged_media in snippet:", snippet.tagged_media);
   console.log("=== END DEBUG ===");
   const feat = body.feat?.trim();
   if (feat) snippet.feat = feat;
 
+  // If skipQueue is true, create snippet directly without queue/workflow
+  if (skipQueue) {
+    try {
+      await createOrUpdateSnippetFile(
+        octokit,
+        snippetPath,
+        snippet,
+        `Add snippet ${body.title}`
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "GitHub commit failed";
+      return res.status(500).json({ error: msg });
+    }
+
+    return res.status(200).json({ id, status: "created" });
+  }
+
+  // Normal queue flow
   const queueItem: QueueItem = {
     id,
     snippetPath,

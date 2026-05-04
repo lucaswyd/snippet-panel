@@ -6,6 +6,13 @@ export type UploadResult = {
   needsDiscordUpload?: boolean;
 };
 
+export type ServerUploadResult = {
+  name: string;
+  size: number;
+  downloadUrl?: string;
+  error?: string;
+};
+
 const FAST_FILE_UPLOAD = "https://fast-file.com/upload";
 const PROXY_MAX_BYTES = 4 * 1024 * 1024;
 
@@ -151,4 +158,55 @@ export async function uploadVideoFile(
     xhr.open("POST", FAST_FILE_UPLOAD);
     xhr.send(fd);
   });
+}
+
+export async function uploadVideoFileServer(
+  file: File,
+  desiredName: string
+): Promise<ServerUploadResult> {
+  const renamed = new File([file], desiredName, {
+    type: file.type || "video/mp4",
+    lastModified: file.lastModified,
+  });
+
+  const fd = new FormData();
+  fd.append("file", renamed);
+
+  try {
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: fd,
+    });
+
+    if (!response.ok) {
+      return {
+        name: renamed.name,
+        size: renamed.size,
+        error: `Upload failed with status ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const downloadUrl = data.files?.[0]?.downloadUrl;
+
+    if (!downloadUrl) {
+      return {
+        name: renamed.name,
+        size: renamed.size,
+        error: "No download URL returned from upload",
+      };
+    }
+
+    return {
+      name: renamed.name,
+      size: renamed.size,
+      downloadUrl,
+    };
+  } catch (e) {
+    return {
+      name: renamed.name,
+      size: renamed.size,
+      error: e instanceof Error ? e.message : "Upload failed",
+    };
+  }
 }

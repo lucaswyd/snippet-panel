@@ -32,6 +32,8 @@ export default function SnippetForm() {
   const [mediaMode, setMediaMode] = useState<"files" | "urls">("files");
   const [uploads, setUploads] = useState<UploadRow[]>([]);
   const [urlText, setUrlText] = useState("");
+  const [taggedUrlText, setTaggedUrlText] = useState("");
+  const [shouldTag, setShouldTag] = useState(true);
   const [discordBanner, setDiscordBanner] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -104,11 +106,22 @@ export default function SnippetForm() {
             .map((url) => url.trim())
             .filter(Boolean);
 
+    const taggedUrls =
+      mediaMode === "urls" && !shouldTag
+        ? taggedUrlText
+            .split(/\r?\n|,/)
+            .map((url) => url.trim())
+            .filter(Boolean)
+        : [];
+
     console.log("=== DEBUG: SnippetForm submit ===");
     console.log("Media mode:", mediaMode);
     console.log("Uploads:", uploads);
     console.log("URL text:", urlText);
+    console.log("Tagged URL text:", taggedUrlText);
+    console.log("Should tag:", shouldTag);
     console.log("Final URLs array:", urls);
+    console.log("Final tagged URLs array:", taggedUrls);
     console.log("=== END DEBUG ===");
     if (!title.trim() || !prod.trim()) {
       setSubmitError("Title and producer are required.");
@@ -122,8 +135,63 @@ export default function SnippetForm() {
       );
       return;
     }
+    if (!shouldTag && mediaMode === "urls") {
+      if (taggedUrls.length === 0) {
+        setSubmitError("Enter at least one tagged URL.");
+        return;
+      }
+      if (urls.length !== taggedUrls.length) {
+        setSubmitError(`Untagged URLs (${urls.length}) and tagged URLs (${taggedUrls.length}) must have matching counts.`);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
+      // Process gofile URLs if any
+      let processedUrls = urls;
+      let processedTaggedUrls = taggedUrls;
+      
+      const hasGofileUrls = urls.some(url => url.includes("gofile.io")) || 
+                           taggedUrls.some(url => url.includes("gofile.io"));
+      
+      if (hasGofileUrls) {
+        console.log("Processing gofile URLs...");
+        
+        // Process untagged URLs
+        const untaggedRes = await fetch("/api/process-gofile-urls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls }),
+        });
+        const untaggedData = await untaggedRes.json().catch(() => ({}));
+        if (!untaggedRes.ok) {
+          setSubmitError(untaggedData.error || "Failed to process gofile URLs");
+          return;
+        }
+        processedUrls = untaggedData.processedUrls;
+        
+        // Process tagged URLs if they exist
+        if (taggedUrls.length > 0) {
+          const taggedRes = await fetch("/api/process-gofile-urls", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ urls: taggedUrls }),
+          });
+          const taggedData = await taggedRes.json().catch(() => ({}));
+          if (!taggedRes.ok) {
+            setSubmitError(taggedData.error || "Failed to process gofile tagged URLs");
+            return;
+          }
+          processedTaggedUrls = taggedData.processedUrls;
+        }
+        
+        // Update counts after processing
+        if (!shouldTag && processedUrls.length !== processedTaggedUrls.length) {
+          setSubmitError(`After gofile processing: untagged (${processedUrls.length}) and tagged (${processedTaggedUrls.length}) counts don't match`);
+          return;
+        }
+      }
+
       const res = await fetch("/api/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -137,7 +205,9 @@ export default function SnippetForm() {
           released,
           isNew,
           pingNewSnippet,
-          rawFileUrls: urls,
+          rawFileUrls: processedUrls,
+          skipQueue: !shouldTag,
+          taggedFileUrls: !shouldTag ? processedTaggedUrls : undefined,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -156,6 +226,8 @@ export default function SnippetForm() {
       setPingNewSnippet(false);
       setUploads([]);
       setUrlText("");
+      setTaggedUrlText("");
+      setShouldTag(true);
       setMediaMode("files");
       uploadIndexRef.current = 1;
     } catch {
@@ -311,14 +383,20 @@ export default function SnippetForm() {
           <button
             type="button"
             className={`input-mode-pill${mediaMode === "files" ? " active" : ""}`}
-            onClick={() => setMediaMode("files")}
+            onClick={() => {
+              setMediaMode("files");
+              setShouldTag(true);
+            }}
           >
             Upload file
           </button>
           <button
             type="button"
             className={`input-mode-pill${mediaMode === "urls" ? " active" : ""}`}
-            onClick={() => setMediaMode("urls")}
+            onClick={() => {
+              setMediaMode("urls");
+              setShouldTag(true);
+            }}
           >
             Paste URLs
           </button>
@@ -368,13 +446,64 @@ export default function SnippetForm() {
             ))}
           </>
         ) : (
-          <textarea
-            className="mono"
-            rows={6}
-            value={urlText}
-            onChange={(e) => setUrlText(e.target.value)}
-            placeholder={"One media URL per line\nhttps://fast-file.com/example/download"}
-          />
+          <>
+            <div
+              style={{
+                marginBottom: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span className="switch-row" style={{ margin: 0 }}>
+                <span>Tag?</span>
+                <label className="slider-toggle" aria-label="Tag media">
+                  <input
+                    type="checkbox"
+                    checked={shouldTag}
+                    onChange={(e) => setShouldTag(e.target.checked)}
+                  />
+                  <span className="slider-toggle-track" />
+                </label>
+              </span>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: shouldTag ? "1fr" : "1fr 1fr",
+                gap: "0.75rem",
+              }}
+            >
+              <div>
+                <textarea
+                  className="mono"
+                  rows={6}
+                  value={urlText}
+                  onChange={(e) => setUrlText(e.target.value)}
+                  placeholder={"One media URL per line\nhttps://fast-file.com/example/download"}
+                />
+                {!shouldTag && (
+                  <div className="subtle" style={{ marginTop: "0.25rem", fontSize: "0.85rem" }}>
+                    {urlText.split(/\r?\n|,/).filter(Boolean).length} URL{urlText.split(/\r?\n|,/).filter(Boolean).length !== 1 ? "s" : ""}
+                  </div>
+                )}
+              </div>
+              {!shouldTag && (
+                <div>
+                  <textarea
+                    className="mono"
+                    rows={6}
+                    value={taggedUrlText}
+                    onChange={(e) => setTaggedUrlText(e.target.value)}
+                    placeholder={"One tagged URL per line\nhttps://fast-file.com/example/download"}
+                  />
+                  <div className="subtle" style={{ marginTop: "0.25rem", fontSize: "0.85rem" }}>
+                    {taggedUrlText.split(/\r?\n|,/).filter(Boolean).length} URL{taggedUrlText.split(/\r?\n|,/).filter(Boolean).length !== 1 ? "s" : ""}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
 
@@ -384,7 +513,11 @@ export default function SnippetForm() {
         disabled={submitting}
         style={{ width: "100%" }}
       >
-        {submitting ? "Submitting…" : "Submit to queue"}
+        {submitting
+          ? "Submitting…"
+          : mediaMode === "urls" && !shouldTag
+          ? "Create snippet"
+          : "Submit to queue"}
       </button>
     </form>
   );
