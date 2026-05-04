@@ -746,5 +746,49 @@
     "rawFileUrls": [
       "https://fast-file.com/4f002019/download"
     ]
+  },
+  {
+    "id": "2a046369-b42a-4065-bff4-e45c9743bf58",
+    "snippetPath": "snippets/Uu Look Chinese.json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "Uu Look Chinese",
+      "titleConfirmed": true,
+      "prod": "fuckshiro",
+      "prodConfirmed": true,
+      "date": "2025-09-28",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1500720478036299837"
+          ],
+          "separatorId": "1500720479407964243"
+        },
+        "private": {
+          "messageIds": [
+            "1500718586946256967"
+          ],
+          "separatorId": "1500718588716257431"
+        }
+      },
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/bb3409f2/download",
+        "https://fast-file.com/fac76216/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/ff58ff69/download"
+      ],
+      "_queueId": "2a046369-b42a-4065-bff4-e45c9743bf58"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T05:59:35.583Z",
+    "rawFileUrls": [
+      "https://fast-file.com/fac76216/download"
+    ]
   }
 ]
