@@ -6,6 +6,7 @@ interface GofileContentResponse {
       type: string;
       size: number;
       link: string;
+      directLink?: string;
     }>;
   };
 }
@@ -25,7 +26,7 @@ export function getGofileToken(): string {
 
 export async function getGofileContent(contentId: string): Promise<GofileContentResponse> {
   const token = getGofileToken();
-  const url = `${GOFILE_API_URL}/getContent?contentId=${contentId}${token ? `&token=${token}` : ""}`;
+  const url = `${GOFILE_API_URL}/contents/${contentId}${token ? `?token=${token}` : ""}`;
   
   const response = await fetch(url);
   if (!response.ok) {
@@ -63,10 +64,12 @@ export async function fetchGofileFiles(contentId: string): Promise<Array<{ name:
   
   for (const [fileId, fileInfo] of Object.entries(content.data.contents)) {
     if (fileInfo.type === "file") {
-      const blob = await downloadFromGofile(fileInfo.link);
+      // Use directLink if available, otherwise fall back to regular link
+      const downloadUrl = fileInfo.directLink || fileInfo.link;
+      const blob = await downloadFromGofile(downloadUrl);
       files.push({
         name: fileInfo.name,
-        link: fileInfo.link,
+        link: downloadUrl,
         blob,
       });
     }
