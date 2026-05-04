@@ -23,5 +23,40 @@
     "rawFileUrls": [
       "https://gofile.io/d/jIfSRx"
     ]
+  },
+  {
+    "id": "42cd2199-62a5-4e23-a094-601dd41b8944",
+    "snippetPath": "snippets/Crank Up.json",
+    "snippet": {
+      "createdAt": "2026-05-04T01:35:33.230Z",
+      "title": "Crank Up",
+      "titleConfirmed": false,
+      "prod": "WhyCeg & SenseiATL",
+      "prodConfirmed": true,
+      "date": "2026-05-03",
+      "released": false,
+      "untagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500674356987039764/Crank_Up_Snippet_1.mov?ex=69f94b67&is=69f7f9e7&hm=f8004d477b3d710ea31955639b2aea255e3e318053e63ae3911313f5395ca618&"
+      ],
+      "tagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500674305556746310/Crank_Up_Snippet_1.mp4?ex=69f94b5b&is=69f7f9db&hm=5aff6ef5d3111421de80a249c89ebe7cad0a7fadd2566a00d3feb3abbe693d2f&"
+      ],
+      "_queueId": "42cd2199-62a5-4e23-a094-601dd41b8944",
+      "messageId": {
+        "private": {
+          "messageIds": [
+            "1500672372691435591"
+          ],
+          "separatorId": "1500672374406910092"
+        }
+      }
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T01:44:52.332Z",
+    "rawFileUrls": [
+      "https://cdn.discordapp.com/attachments/1491898537926070472/1500674356987039764/Crank_Up_Snippet_1.mov?ex=69f94b67&is=69f7f9e7&hm=f8004d477b3d710ea31955639b2aea255e3e318053e63ae3911313f5395ca618&"
+    ]
   }
 ]
