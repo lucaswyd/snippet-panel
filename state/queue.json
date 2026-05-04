@@ -1297,5 +1297,51 @@
     "rawFileUrls": [
       "https://fast-file.com/c5f78f76/download"
     ]
+  },
+  {
+    "id": "e3fc71d8-24a4-420a-8a05-d27bc53a21dc",
+    "snippetPath": "snippets/Insane.json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "RIDIN W $ANE",
+      "titleConfirmed": true,
+      "prod": "ev7n, Pradabagshawty, & mxrt4lity",
+      "prodConfirmed": true,
+      "date": "2026-01-06",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1500750457369395241"
+          ],
+          "separatorId": "1500750458661376020"
+        },
+        "private": {
+          "messageIds": [
+            "1500745939206537257"
+          ],
+          "separatorId": "1500745940586205295"
+        }
+      },
+      "released": false,
+      "untagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1491989241150963742/SaveClip.App_AQMd1aIk3WoFHCIwKGSKGp6GWw_hs9ObfnZ6ZutFmgA1CU1i2I46tjFfGKjDfKdH9Ky_dQ7D7nyQmPhU7b7n9yWo.mp4?ex=69e24482&is=69e0f302&hm=9d400089b51d33f69229052920765adc40a600e257689acb99561e5dc2fef51e&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1491989235396509787/copy_8BD434FC-794D-461F-8E2D-D0EF78F902B8.mov?ex=69e24481&is=69e0f301&hm=ef124d9877cbd17ae9f3965cec648bece80d47953f5af71747efccc3c6354d85&",
+        "https://fast-file.com/ff6c71f7/download"
+      ],
+      "tagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1494432829919199232/Insane_Snippet_1.mp4?ex=69e29687&is=69e14507&hm=7229b269807a489273d83187b3878f88c0577612439dd5cabb150c897244eab7&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1494433315493515486/Insane_Snippet_2.mov?ex=69e296fb&is=69e1457b&hm=2726d8aa8f864ddbe16b5b895e0cff1394e8c9ee0822aa6f5b32c6b49be67a5a&"
+      ],
+      "_queueId": "e3fc71d8-24a4-420a-8a05-d27bc53a21dc"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T14:49:20.042Z",
+    "rawFileUrls": [
+      "https://fast-file.com/ff6c71f7/download"
+    ]
   }
 ]
