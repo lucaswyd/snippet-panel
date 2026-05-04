@@ -1,1 +1,46 @@
-[]
+[
+  {
+    "id": "825b8f47-de2d-4257-89f9-278164bc06dd",
+    "snippetPath": "snippets/untitled (1).json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "5%",
+      "titleConfirmed": true,
+      "prod": "ev7n & Pradabagshawty",
+      "prodConfirmed": true,
+      "date": "2026-03-20",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1497086106565345380"
+          ],
+          "separatorId": "1498538076836855929"
+        },
+        "private": {
+          "messageIds": [
+            "1497089104611905566"
+          ],
+          "separatorId": "1498537776839397460"
+        }
+      },
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/e5efa474/download",
+        "https://fast-file.com/cfc74f1d/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/4adcc35d/download"
+      ],
+      "_queueId": "825b8f47-de2d-4257-89f9-278164bc06dd"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T00:24:29.259Z",
+    "rawFileUrls": [
+      "https://fast-file.com/cfc74f1d/download"
+    ]
+  }
+]
