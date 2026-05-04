@@ -454,5 +454,49 @@
       "https://fast-file.com/afd5dda5/download",
       "https://fast-file.com/4083c27f/download"
     ]
+  },
+  {
+    "id": "fb5dedb9-b018-4e60-8b8f-3f0f6899c732",
+    "snippetPath": "snippets/What I Was Sayin.json",
+    "snippet": {
+      "createdAt": "2026-04-03T05:00:00.000Z",
+      "title": "What I Was Sayin",
+      "titleConfirmed": true,
+      "prod": "ev7n & 10kGrey",
+      "prodConfirmed": true,
+      "date": "2026-02-27",
+      "ping": false,
+      "webhookSelected": "snippet-archive",
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1497085969080520934"
+          ],
+          "separatorId": "1497085970351394846"
+        },
+        "private": {
+          "messageIds": [
+            "1497088968989347901"
+          ],
+          "separatorId": "1497088970121674825"
+        }
+      },
+      "released": true,
+      "untagged_media": [
+        "https://fast-file.com/5662ad8d/download",
+        "https://fast-file.com/78444208/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/ed476928/download"
+      ],
+      "_queueId": "fb5dedb9-b018-4e60-8b8f-3f0f6899c732"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T04:21:20.130Z",
+    "rawFileUrls": [
+      "https://fast-file.com/78444208/download"
+    ]
   }
 ]
