@@ -276,5 +276,49 @@
     "rawFileUrls": [
       "https://cdn.discordapp.com/attachments/1491898537926070472/1500677946887770112/Triple_Cross_Snippet_1.mov?ex=69f94ebf&is=69f7fd3f&hm=746a7f25a76c3d79fe23a77fdc46facdde08fafd85d44b1f0ed09de5ef4f8344&"
     ]
+  },
+  {
+    "id": "e1239174-b592-4182-b2de-c3cd4111be6d",
+    "snippetPath": "snippets/First Place.json",
+    "snippet": {
+      "createdAt": "2026-04-28T04:13:27.039Z",
+      "title": "First Place",
+      "titleConfirmed": false,
+      "prod": "WhyCeg",
+      "prodConfirmed": false,
+      "date": "2026-04-27",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/334f0056/download",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500676415534928035/First_Place_Snippet_2.mov?ex=69f94d52&is=69f7fbd2&hm=74840637071c0febc653feecd43b0df421d73e7a891fdf952a7405bfe7b06762&",
+        "https://fast-file.com/b0d78963/download"
+      ],
+      "tagged_media": [
+        "https://fast-file.com/b97a5a3a/download",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1500676398631616542/First_Place_Snippet_2.mp4?ex=69f94d4e&is=69f7fbce&hm=748a98254ad39e90029dd6bdbdc3e78aaac71f50d826537d07a9c13761f177b9&"
+      ],
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1498538089340076163"
+          ],
+          "separatorId": "1500675386797719755"
+        },
+        "private": {
+          "messageIds": [
+            "1498537790051188747"
+          ],
+          "separatorId": "1500675161907794021"
+        }
+      },
+      "_queueId": "e1239174-b592-4182-b2de-c3cd4111be6d"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-04T02:33:32.322Z",
+    "rawFileUrls": [
+      "https://fast-file.com/b0d78963/download"
+    ]
   }
 ]
