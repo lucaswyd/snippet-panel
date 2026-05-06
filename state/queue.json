@@ -1979,5 +1979,44 @@
     "rawFileUrls": [
       "https://fast-file.com/812abefa/download"
     ]
+  },
+  {
+    "id": "373ee6bf-ec13-4075-9e4f-987930edcab9",
+    "snippetPath": "snippets/Mo Bucks.json",
+    "snippet": {
+      "createdAt": "2026-05-06T04:31:46.375Z",
+      "title": "Mo Bucks",
+      "titleConfirmed": false,
+      "prod": "TRGC",
+      "prodConfirmed": true,
+      "date": "2026-05-05",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/ecfd19ba/download"
+      ],
+      "tagged_media": [],
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1501441703209341009"
+          ],
+          "separatorId": "1501441704635531336"
+        },
+        "private": {
+          "messageIds": [
+            "1501441493598998608"
+          ],
+          "separatorId": "1501441494635253910"
+        }
+      },
+      "_queueId": "373ee6bf-ec13-4075-9e4f-987930edcab9"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-06T13:28:39.488Z",
+    "rawFileUrls": [
+      "https://fast-file.com/ecfd19ba/download"
+    ]
   }
 ]
