@@ -501,6 +501,21 @@ export default async function handler(
             };
           }
         );
+        
+        // If this is a direct update with tagged URLs, trigger direct posting
+        if (isDirectUpdate && media.tagged.length > 0) {
+          try {
+            await triggerRepositoryDispatch("post-direct", {
+              snippetPath: body.path,
+              queueId: `direct-${Date.now()}`,
+              taggedMediaUrls: media.tagged,
+            });
+          } catch (e) {
+            console.error("Failed to trigger direct posting:", e);
+            // Don't fail the whole operation if posting fails
+          }
+        }
+        
         const afterRecords = await loadOrderedSnippetRecords();
         await syncSnippetChange(body.path, beforeRecords, afterRecords);
       }

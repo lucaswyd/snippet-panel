@@ -1,0 +1,111 @@
+name: Post direct (no tagging)
+
+on:
+  repository_dispatch:
+    types:
+      - post-direct
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Checkout snippets repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.SNIPPETS_REPO_OWNER }}/${{ secrets.SNIPPETS_REPO_NAME }}
+          token: ${{ secrets.GH_PAT }}
+          path: snippets-repo
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Node deps
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Wait for posting queue and register action
+        run: |
+          echo "Waiting for posting queue..."
+          QUEUE_RESPONSE=$(curl -fsS -X POST "${BASE}/api/wait-for-posting-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"type\":\"posting_private\",\"queueId\":\"${{ github.event.client_payload.queueId }}\",\"snippetPath\":\"${{ github.event.client_payload.snippetPath }}\"}")
+          
+          if echo "$QUEUE_RESPONSE" | jq -e '.error' > /dev/null; then
+            echo "Failed to get posting queue slot: $(echo "$QUEUE_RESPONSE" | jq -r '.error')"
+            exit 1
+          fi
+          
+          POSTING_ACTION_ID=$(echo "$QUEUE_RESPONSE" | jq -r '.actionId')
+          echo "POSTING_ACTION_ID=$POSTING_ACTION_ID" >> $GITHUB_ENV
+          echo "Private posting action started with ID: $POSTING_ACTION_ID"
+
+      - name: Update queue status
+        run: |
+          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"${{ github.event.client_payload.queueId }}\",\"status\":\"posting_private\"}"
+
+      - name: Post to private channel
+        run: |
+          export FULL_POST_ACTION="full-post-queue-private"
+          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "${{ github.event.client_payload.snippetPath }}" --argjson t "${{ github.event.client_payload.taggedMediaUrls }}" '{snippetPath: $p, taggedMediaUrls: $t}')
+          npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
+
+      - name: Update queue status to public
+        run: |
+          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"${{ github.event.client_payload.queueId }}\",\"status\":\"posting_public\"}"
+
+      - name: Post to public channel
+        run: |
+          export FULL_POST_ACTION="full-post-queue-public"
+          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "${{ github.event.client_payload.snippetPath }}" --argjson t "${{ github.event.client_payload.taggedMediaUrls }}" '{snippetPath: $p, taggedMediaUrls: $t}')
+          npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
+
+      - name: Mark as complete
+        run: |
+          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"queueId\":\"${{ github.event.client_payload.queueId }}\",\"ok\":true}"
+
+          # Complete posting action
+          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"actionId\":\"$POSTING_ACTION_ID\",\"status\":\"done\"}" || true
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          echo "Direct posting workflow failed, updating action queue..."
+          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"actionId\":\"$POSTING_ACTION_ID\",\"status\":\"error\",\"errorMessage\":\"Direct posting workflow failed\"}" || true

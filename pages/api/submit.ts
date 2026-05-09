@@ -99,7 +99,7 @@ export default async function handler(
   const feat = body.feat?.trim();
   if (feat) snippet.feat = feat;
 
-  // If skipQueue is true, create snippet directly without queue/workflow
+  // If skipQueue is true, create snippet directly and trigger direct posting
   if (skipQueue) {
     try {
       await createOrUpdateSnippetFile(
@@ -108,6 +108,13 @@ export default async function handler(
         snippet,
         `Add snippet ${body.title}`
       );
+
+      // Trigger direct posting workflow
+      await triggerRepositoryDispatch("post-direct", {
+        snippetPath,
+        queueId: id,
+        taggedMediaUrls: taggedMedia,
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "GitHub commit failed";
       return res.status(500).json({ error: msg });
