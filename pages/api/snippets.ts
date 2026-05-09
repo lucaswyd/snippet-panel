@@ -267,6 +267,12 @@ async function syncTargetChange(
     return;
   }
 
+  // Handle deletion: only delete the specific snippet and its separator
+  if (oldIndex >= 0 && newIndex < 0) {
+    await deleteSnippetMessages(beforeOrdered[oldIndex], target);
+    return;
+  }
+
   const startIndex = Math.min(
     oldIndex >= 0 ? oldIndex : Number.POSITIVE_INFINITY,
     newIndex >= 0 ? newIndex : Number.POSITIVE_INFINITY
@@ -276,7 +282,7 @@ async function syncTargetChange(
     return;
   }
 
-  await rebuildTargetFromIndex(target, beforeOrdered, afterOrdered, startIndex);
+  await rebuildTargetFromIndex(target, beforeRecords, afterRecords, startIndex);
 }
 
 async function syncSnippetChange(
