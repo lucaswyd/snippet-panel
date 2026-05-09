@@ -48,32 +48,6 @@
     ]
   },
   {
-    "id": "083e3df3-c805-497a-89e1-74358a65ba14",
-    "snippetPath": "snippets/Funeral Home.json",
-    "snippet": {
-      "createdAt": "2026-05-09T04:46:37.281Z",
-      "title": "Funeral Home",
-      "titleConfirmed": false,
-      "prod": "mxrt4lity",
-      "prodConfirmed": true,
-      "date": "2026-04-24",
-      "released": false,
-      "untagged_media": [
-        "https://fast-file.com/cb54a0b3/download"
-      ],
-      "tagged_media": [],
-      "_queueId": "083e3df3-c805-497a-89e1-74358a65ba14",
-      "feat": "imsomarcus"
-    },
-    "status": "done",
-    "isNew": false,
-    "pingNewSnippet": false,
-    "createdAt": "2026-05-09T04:46:37.281Z",
-    "rawFileUrls": [
-      "https://fast-file.com/cb54a0b3/download"
-    ]
-  },
-  {
     "id": "f56b8e8d-f1cb-4a1f-8fb6-c24b674abb43",
     "snippetPath": "snippets/YANYANN.json",
     "snippet": {
