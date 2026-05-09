@@ -9,6 +9,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  BASE: ${{ secrets.VERCEL_APP_URL }}
+
 permissions:
   contents: write
 
