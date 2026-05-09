@@ -21,6 +21,10 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT }}
 
+      - name: Set BASE URL
+        run: |
+          BASE="${VERCEL_APP_URL%/}"
+
       - name: Checkout snippets repo
         uses: actions/checkout@v4
         with:
