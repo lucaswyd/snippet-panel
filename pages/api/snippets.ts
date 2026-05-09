@@ -356,12 +356,18 @@ export default async function handler(
       console.log("Current untagged_media:", currentSnippet.untagged_media);
       console.log("New media from request:", media);
       console.log("New untagged URLs to add:", newUntaggedUrls);
+      console.log("Has tagged URLs:", media.tagged.length > 0);
+      console.log("Is direct update:", media.tagged.length > 0 && media.untagged.length === media.tagged.length);
       console.log("=== END DEBUG ===");
 
       let updated: Snippet;
 
-      if (newUntaggedUrls.length > 0) {
-        // New media added - add to queue for tagging/posting
+      // Check if this is a direct update with both untagged and tagged URLs
+      const hasTaggedUrls = media.tagged.length > 0;
+      const isDirectUpdate = hasTaggedUrls && media.untagged.length === media.tagged.length;
+
+      if (newUntaggedUrls.length > 0 && !isDirectUpdate) {
+        // New media added without tagged URLs - add to queue for tagging/posting
         const id = uuidv4();
         const createdAt = new Date().toISOString();
 
@@ -450,11 +456,15 @@ export default async function handler(
           return res.status(500).json({ error: msg });
         }
       } else {
-        // No new media - normal update with Discord sync
+        // No new media OR direct update with both untagged/tagged - normal update with Discord sync
+        const updateMessage = isDirectUpdate 
+          ? `snippet direct update: ${body.path.split("/").pop() ?? body.path}`
+          : `snippet edit: ${body.path.split("/").pop() ?? body.path}`;
+          
         updated = await mutateSnippetAtPath(
           octokit,
           body.path,
-          `snippet edit: ${body.path.split("/").pop() ?? body.path}`,
+          updateMessage,
           (current) => {
             return {
               ...current,
