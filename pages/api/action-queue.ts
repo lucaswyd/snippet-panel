@@ -22,7 +22,7 @@ export default async function handler(
   if (req.method === "POST") {
     const { type, queueId, snippetPath, jobId } = req.body;
     
-    if (!type || !["tagging", "posting_private", "posting_public", "reposting"].includes(type)) {
+    if (!type || !["posting_private", "posting_public", "reposting"].includes(type)) {
       return res.status(400).json({ error: "Invalid action type" });
     }
 

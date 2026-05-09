@@ -45,23 +45,7 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Check action queue
-        run: |
-          echo "Checking if tagging action can start..."
-          RESPONSE=$(curl -fsS -X POST "${BASE}/api/action-queue" \
-            -H "Content-Type: application/json" \
-            -H "x-internal-secret: ${CALLBACK_SECRET}" \
-            -d "{\"type\":\"tagging\",\"queueId\":\"${{ github.event.client_payload.queueId }}\",\"snippetPath\":\"${{ github.event.client_payload.snippetPath }}\"}")
-          
-          if echo "$RESPONSE" | jq -e '.error' > /dev/null; then
-            echo "Action queue error: $(echo "$RESPONSE" | jq -r '.error')"
-            exit 1
-          fi
-          
-          ACTION_ID=$(echo "$RESPONSE" | jq -r '.actionId')
-          echo "ACTION_ID=$ACTION_ID" >> $GITHUB_ENV
-          echo "Tagging action started with ID: $ACTION_ID"
-
+      
       - name: Cache FFmpeg
         id: cache-ffmpeg
         uses: actions/cache@v4
@@ -424,6 +408,22 @@ jobs:
           git push origin HEAD
           cd ..
 
+          # Wait for posting queue and register action
+          echo "Waiting for posting queue..."
+          QUEUE_RESPONSE=$(curl -fsS -X POST "${BASE}/api/wait-for-posting-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"type\":\"posting_private\",\"queueId\":\"$QUEUE_ID\",\"snippetPath\":\"$SNIPPET_PATH\"}")
+          
+          if echo "$QUEUE_RESPONSE" | jq -e '.error' > /dev/null; then
+            echo "Failed to get posting queue slot: $(echo "$QUEUE_RESPONSE" | jq -r '.error')"
+            exit 1
+          fi
+          
+          POSTING_ACTION_ID=$(echo "$QUEUE_RESPONSE" | jq -r '.actionId')
+          echo "POSTING_ACTION_ID=$POSTING_ACTION_ID" >> $GITHUB_ENV
+          echo "Private posting action started with ID: $POSTING_ACTION_ID"
+
           curl -fsS -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
@@ -438,10 +438,11 @@ jobs:
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
 
+          # Complete posting action
           curl -fsS -X PATCH "${BASE}/api/action-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
-            -d "{\"actionId\":\"$ACTION_ID\",\"status\":\"done\"}"
+            -d "{\"actionId\":\"$POSTING_ACTION_ID\",\"status\":\"done\"}" || true
 
       - name: Handle failure
         if: failure()
@@ -450,4 +451,4 @@ jobs:
           curl -fsS -X PATCH "${BASE}/api/action-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
-            -d "{\"actionId\":\"$ACTION_ID\",\"status\":\"error\",\"errorMessage\":\"Tagging workflow failed\"}" || true
+            -d "{\"actionId\":\"$POSTING_ACTION_ID\",\"status\":\"error\",\"errorMessage\":\"Tagging workflow failed\"}" || true

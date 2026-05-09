@@ -24,31 +24,7 @@ export async function triggerTagVideosWithQueue(
   try {
     const octokit = getOctokit();
     
-    // Check if we can start tagging action
-    const baseUrl = process.env.VERCEL_APP_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/action-queue`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-internal-secret": process.env.CALLBACK_SECRET || "",
-      },
-      body: JSON.stringify({
-        type: "tagging",
-        queueId: clientPayload.queueId,
-        snippetPath: clientPayload.snippetPath,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      return { success: false, error: error.error || "Failed to queue action" };
-    }
-
-    const result = await response.json();
-    if (result.error) {
-      return { success: false, error: result.error };
-    }
-
+    // Tagging can run immediately, no queue check needed
     // Start the workflow
     await octokit.rest.repos.createDispatchEvent({
       owner: githubOwner(),

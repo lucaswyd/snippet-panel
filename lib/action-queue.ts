@@ -1,4 +1,4 @@
-export type ActionType = "tagging" | "posting_private" | "posting_public" | "reposting";
+export type ActionType = "posting_private" | "posting_public" | "reposting";
 
 export interface ActionQueueItem {
   id: string;
