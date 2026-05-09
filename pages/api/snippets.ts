@@ -45,6 +45,8 @@ type PatchBody = {
   date?: string;
   released?: boolean;
   media?: MediaPatch[];
+  isNew?: boolean;
+  pingNewSnippet?: boolean;
 };
 
 type DeleteBody = {
@@ -428,13 +430,20 @@ export default async function handler(
         }
 
         try {
-          await triggerRepositoryDispatch("tag-videos", {
+          const { triggerTagVideosWithQueue } = await import("@/lib/trigger-repository-dispatch");
+          const result = await triggerTagVideosWithQueue({
             snippetPath: body.path,
             queueId: id,
-            isNew: false,
-            pingNewSnippet: false,
+            isNew: Boolean(body.isNew),
+            pingNewSnippet: Boolean(body.isNew && body.pingNewSnippet),
             rawFileUrls: newUntaggedUrls,
           });
+          
+          if (!result.success) {
+            const msg = result.error || "Failed to trigger tag-videos workflow";
+            await updateQueueItem(id, { status: "error", errorMessage: msg });
+            return res.status(500).json({ error: msg });
+          }
         } catch (e) {
           const msg = e instanceof Error ? e.message : "Failed to trigger tag-videos workflow";
           await updateQueueItem(id, { status: "error", errorMessage: msg });
@@ -482,6 +491,12 @@ export default async function handler(
             };
           }
         );
+        const afterRecords = await loadOrderedSnippetRecords();
+        await syncSnippetChange(body.path, beforeRecords, afterRecords);
+      }
+
+      // Always sync to Discord when there are changes, even with new media
+      if (newUntaggedUrls.length > 0) {
         const afterRecords = await loadOrderedSnippetRecords();
         await syncSnippetChange(body.path, beforeRecords, afterRecords);
       }

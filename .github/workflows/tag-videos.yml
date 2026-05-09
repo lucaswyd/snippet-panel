@@ -45,6 +45,23 @@ jobs:
         if: steps.cache-node-modules.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Check action queue
+        run: |
+          echo "Checking if tagging action can start..."
+          RESPONSE=$(curl -fsS -X POST "${BASE}/api/action-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"type\":\"tagging\",\"queueId\":\"${{ github.event.client_payload.queueId }}\",\"snippetPath\":\"${{ github.event.client_payload.snippetPath }}\"}")
+          
+          if echo "$RESPONSE" | jq -e '.error' > /dev/null; then
+            echo "Action queue error: $(echo "$RESPONSE" | jq -r '.error')"
+            exit 1
+          fi
+          
+          ACTION_ID=$(echo "$RESPONSE" | jq -r '.actionId')
+          echo "ACTION_ID=$ACTION_ID" >> $GITHUB_ENV
+          echo "Tagging action started with ID: $ACTION_ID"
+
       - name: Cache FFmpeg
         id: cache-ffmpeg
         uses: actions/cache@v4
@@ -420,3 +437,17 @@ jobs:
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
+
+          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"actionId\":\"$ACTION_ID\",\"status\":\"done\"}"
+
+      - name: Handle failure
+        if: failure()
+        run: |
+          echo "Tagging workflow failed, updating action queue..."
+          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: ${CALLBACK_SECRET}" \
+            -d "{\"actionId\":\"$ACTION_ID\",\"status\":\"error\",\"errorMessage\":\"Tagging workflow failed\"}" || true

@@ -46,6 +46,7 @@ function label(status: QueueItem["status"]): string {
 
 export default function QueuePanel() {
   const [items, setItems] = useState<QueueItem[]>([]);
+  const [actions, setActions] = useState<any[]>([]);
   const {
     repostUiVisible,
     job,
@@ -56,22 +57,28 @@ export default function QueuePanel() {
   } = useRepost();
 
   const load = () => {
-    void fetch("/api/queue")
-      .then((r) => r.json())
-      .then((data: QueueItem[]) => setItems(Array.isArray(data) ? data : []))
+    Promise.all([
+      fetch("/api/queue").then((r) => r.json()).catch(() => []),
+      fetch("/api/action-queue").then((r) => r.json()).catch(() => []),
+    ])
+      .then(([queueData, actionData]) => {
+        setItems(Array.isArray(queueData) ? queueData : []);
+        setActions(Array.isArray(actionData) ? actionData : []);
+      })
       .catch(() => {});
   };
 
   useEffect(() => {
     load();
-    const t = setInterval(load, 5000);
-    return () => clearInterval(t);
   }, []);
 
   const sorted = [...items].sort(
     (a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const hasRunningActions = actions.some((action) => action.status === "running");
+  const runningActionType = actions.find((action) => action.status === "running")?.type;
 
   const dismiss = (id: string) => {
     void fetch(`/api/queue?id=${encodeURIComponent(id)}`, {
@@ -81,15 +88,32 @@ export default function QueuePanel() {
 
   return (
     <div className="panel" style={{ padding: "1.5rem", height: "fit-content" }}>
-      <h2
+      <div
         style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "1.15rem",
-          margin: "0 0 1rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
         }}
       >
-        Processing queue
-      </h2>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "1.15rem",
+            margin: 0,
+          }}
+        >
+          Processing queue
+        </h2>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={load}
+          style={{ padding: "0.35rem 0.65rem", fontSize: "0.85rem" }}
+        >
+          Refresh
+        </button>
+      </div>
       {repostUiVisible && (
         <div
           className="queue-item"
@@ -179,6 +203,11 @@ export default function QueuePanel() {
               Dismiss
             </button>
           )}
+        </div>
+      )}
+      {hasRunningActions && (
+        <div className="banner-error" style={{ marginBottom: "1rem" }}>
+          <strong>Action in progress:</strong> {runningActionType} - Other actions will wait
         </div>
       )}
       {sorted.length === 0 && !repostUiVisible ? (

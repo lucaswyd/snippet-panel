@@ -37,6 +37,17 @@ export default async function handler(
 
   if (body.ok === true) {
     await updateQueueItem(queueId, { status: "done" });
+    
+    // Auto-remove completed items from queue after a delay
+    setTimeout(async () => {
+      try {
+        const { removeQueueItem } = await import("@/lib/queue");
+        await removeQueueItem(queueId);
+      } catch (e) {
+        console.error("Failed to auto-remove completed queue item:", e);
+      }
+    }, 5000); // Remove after 5 seconds
+    
     return res.status(200).json({ ok: true });
   }
 
