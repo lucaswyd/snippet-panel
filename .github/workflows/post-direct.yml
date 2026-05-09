@@ -14,16 +14,15 @@ permissions:
 
 jobs:
   post:
+    env:
+      BASE: ${{ secrets.VERCEL_APP_URL }}
+      CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main repo
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_PAT }}
-
-      - name: Set BASE URL
-        run: |
-          echo "BASE=${VERCEL_APP_URL%/}" >> $GITHUB_ENV
 
       - name: Checkout snippets repo
         uses: actions/checkout@v4
