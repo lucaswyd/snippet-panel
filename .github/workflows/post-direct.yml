@@ -51,10 +51,17 @@ jobs:
       - name: Wait for posting queue and register action
         run: |
           echo "Waiting for posting queue..."
+          echo "BASE: ${BASE}"
+          echo "CALLBACK_SECRET: [REDACTED]"
+          echo "queueId: ${{ github.event.client_payload.queueId }}"
+          echo "snippetPath: ${{ github.event.client_payload.snippetPath }}"
+          
           QUEUE_RESPONSE=$(curl -fsS -X POST "${BASE}/api/wait-for-posting-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"type":"posting_private","queueId":"${{ github.event.client_payload.queueId }}","snippetPath":"${{ github.event.client_payload.snippetPath }}"}')
+          
+          echo "Queue response: $QUEUE_RESPONSE"
           
           if echo "$QUEUE_RESPONSE" | jq -e '.error' > /dev/null; then
             echo "Failed to get posting queue slot: $(echo "$QUEUE_RESPONSE" | jq -r '.error')"
