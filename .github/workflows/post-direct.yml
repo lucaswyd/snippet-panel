@@ -91,6 +91,11 @@ jobs:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           FULL_POST_ACTION: full-post-queue-private
           FULL_POST_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+          SNIPPETS_REPO_OWNER: ${{ secrets.SNIPPETS_REPO_OWNER }}
+          SNIPPETS_REPO_NAME: ${{ secrets.SNIPPETS_REPO_NAME }}
         run: |
           npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
 
@@ -110,6 +115,11 @@ jobs:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
           FULL_POST_ACTION: full-post-queue-public
           FULL_POST_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_REPO_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPO_NAME: ${{ github.event.repository.name }}
+          SNIPPETS_REPO_OWNER: ${{ secrets.SNIPPETS_REPO_OWNER }}
+          SNIPPETS_REPO_NAME: ${{ secrets.SNIPPETS_REPO_NAME }}
         run: |
           npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
 
