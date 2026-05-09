@@ -67,7 +67,7 @@ jobs:
           set -euo pipefail
           Q=$(echo "$PAYLOAD" | jq -r .queueId)
           BASE="${VERCEL_APP_URL%/}"
-          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+          curl -fsSL -X POST "${BASE}/api/internal-post-complete" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$Q\",\"ok\":true}"
@@ -82,7 +82,7 @@ jobs:
           set -euo pipefail
           Q=$(echo "$PAYLOAD" | jq -r .queueId)
           BASE="${VERCEL_APP_URL%/}"
-          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+          curl -fsSL -X POST "${BASE}/api/internal-post-complete" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$Q\",\"ok\":false,\"errorMessage\":\"Full archive post workflow failed\"}"

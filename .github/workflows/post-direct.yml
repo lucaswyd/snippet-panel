@@ -59,7 +59,7 @@ jobs:
           echo "queueId: ${{ github.event.client_payload.queueId }}"
           echo "snippetPath: ${{ github.event.client_payload.snippetPath }}"
           
-          QUEUE_RESPONSE=$(curl -fsS -X POST "${BASE}/api/wait-for-posting-queue" \
+          QUEUE_RESPONSE=$(curl -fsSL -X POST "${BASE}/api/wait-for-posting-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"type":"posting_private","queueId":"${{ github.event.client_payload.queueId }}","snippetPath":"${{ github.event.client_payload.snippetPath }}"}')
@@ -80,7 +80,7 @@ jobs:
           BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
-          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+          curl -fsSL -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"queueId":"${{ github.event.client_payload.queueId }}","status":"posting_private"}'
@@ -99,7 +99,7 @@ jobs:
           BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
-          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+          curl -fsSL -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"queueId":"${{ github.event.client_payload.queueId }}","status":"posting_public"}'
@@ -118,13 +118,13 @@ jobs:
           BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
-          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+          curl -fsSL -X POST "${BASE}/api/internal-post-complete" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"queueId":"${{ github.event.client_payload.queueId }}","ok":true}'
 
           # Complete posting action
-          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+          curl -fsSL -X PATCH "${BASE}/api/action-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"actionId":"$POSTING_ACTION_ID","status":"done"}' || true
@@ -136,7 +136,7 @@ jobs:
           CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
           echo "Direct posting workflow failed, updating action queue..."
-          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+          curl -fsSL -X PATCH "${BASE}/api/action-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d '{"actionId":"$POSTING_ACTION_ID","status":"error","errorMessage":"Direct posting workflow failed"}' || true

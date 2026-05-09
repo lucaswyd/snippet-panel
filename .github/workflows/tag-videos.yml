@@ -60,7 +60,7 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y curl jq
 
-          curl -fsSL https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz \
+          curl -fsS https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz \
             -o /tmp/ffmpeg.tar.xz
 
           tar -xf /tmp/ffmpeg.tar.xz -C /tmp
@@ -142,14 +142,14 @@ jobs:
           fail_job() {
             local msg="$1"
             echo "ERROR: $msg"
-            curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+            curl -fsSL -X POST "${BASE}/api/internal-post-complete" \
               -H "Content-Type: application/json" \
               -H "x-internal-secret: ${CALLBACK_SECRET}" \
               -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":false,\"errorMessage\":\"$msg\"}" || true
             exit 1
           }
 
-          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+          curl -fsSL -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_private\"}"
@@ -267,7 +267,7 @@ jobs:
               echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
               echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
               echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
-              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
+              RESP=$(curl -fsSL -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
               TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
 
               if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
@@ -378,7 +378,7 @@ jobs:
               echo "$PROBE" | jq -e '.streams | map(select(.codec_type=="video")) | length == 1' >/dev/null
               echo "$PROBE" | jq -e '.streams | all(.codec_type != "data" and .codec_type != "subtitle")' >/dev/null
               echo "$PROBE" | jq -e '.streams | any(.codec_type=="video" and .codec_name=="h264" and .pix_fmt=="yuv420p")' >/dev/null
-              RESP=$(curl -fsS -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
+              RESP=$(curl -fsSL -X POST https://fast-file.com/upload -F "files=@${OUT};type=video/mp4")
               TITLE=$(echo "$RESP" | jq -r '.files[0].title // empty')
 
               if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
@@ -410,7 +410,7 @@ jobs:
 
           # Wait for posting queue and register action
           echo "Waiting for posting queue..."
-          QUEUE_RESPONSE=$(curl -fsS -X POST "${BASE}/api/wait-for-posting-queue" \
+          QUEUE_RESPONSE=$(curl -fsSL -X POST "${BASE}/api/wait-for-posting-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"type\":\"posting_private\",\"queueId\":\"$QUEUE_ID\",\"snippetPath\":\"$SNIPPET_PATH\"}")
@@ -424,7 +424,7 @@ jobs:
           echo "POSTING_ACTION_ID=$POSTING_ACTION_ID" >> $GITHUB_ENV
           echo "Private posting action started with ID: $POSTING_ACTION_ID"
 
-          curl -fsS -X POST "${BASE}/api/internal-queue-status" \
+          curl -fsSL -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$QUEUE_ID\",\"status\":\"posting_public\"}"
@@ -433,13 +433,13 @@ jobs:
           FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "$SNIPPET_PATH" --argjson t "$TAG_URLS" --argjson isNew "$IS_NEW_SNIPPET" --argjson ping "$PING_NEW_SNIPPET" '{snippetPath: $p, taggedMediaUrls: $t, isNew: $isNew, pingNewSnippet: $ping}')
           npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
 
-          curl -fsS -X POST "${BASE}/api/internal-post-complete" \
+          curl -fsSL -X POST "${BASE}/api/internal-post-complete" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"queueId\":\"$QUEUE_ID\",\"ok\":true}"
 
           # Complete posting action
-          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+          curl -fsSL -X PATCH "${BASE}/api/action-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"actionId\":\"$POSTING_ACTION_ID\",\"status\":\"done\"}" || true
@@ -448,7 +448,7 @@ jobs:
         if: failure()
         run: |
           echo "Tagging workflow failed, updating action queue..."
-          curl -fsS -X PATCH "${BASE}/api/action-queue" \
+          curl -fsSL -X PATCH "${BASE}/api/action-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
             -d "{\"actionId\":\"$POSTING_ACTION_ID\",\"status\":\"error\",\"errorMessage\":\"Tagging workflow failed\"}" || true
