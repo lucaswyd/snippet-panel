@@ -62,7 +62,7 @@ jobs:
           QUEUE_RESPONSE=$(curl -fsSL -X POST "${BASE}/api/wait-for-posting-queue" \
             -H "Content-Type: application/json" \
             -H "x-internal-secret: ${CALLBACK_SECRET}" \
-            -d '{"type":"posting_private","queueId":"${{ github.event.client_payload.queueId }}","snippetPath":"${{ github.event.client_payload.snippetPath }}"}')
+            -d "$(jq -n --arg type "posting_private" --arg queueId "${{ github.event.client_payload.queueId }}" --arg snippetPath "${{ github.event.client_payload.snippetPath }}" '{type: $type, queueId: $queueId, snippetPath: $snippetPath}')")
           
           echo "Queue response: $QUEUE_RESPONSE"
           
