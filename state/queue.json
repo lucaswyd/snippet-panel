@@ -72,5 +72,53 @@
     "rawFileUrls": [
       "https://fast-file.com/cb54a0b3/download"
     ]
+  },
+  {
+    "id": "f56b8e8d-f1cb-4a1f-8fb6-c24b674abb43",
+    "snippetPath": "snippets/YANYANN.json",
+    "snippet": {
+      "createdAt": "2026-05-09T04:56:47.759Z",
+      "title": "YANYANN",
+      "titleConfirmed": true,
+      "prod": "TRGC",
+      "prodConfirmed": true,
+      "date": "2026-04-20",
+      "released": false,
+      "untagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1501377852082487428/copy_B3888469-709E-4BCB-A773-57A3BFA80B36.mov?ex=69ffcf16&is=69fe7d96&hm=4de4997a36ccd1d91915041e29d4579ab60ca429c4467ec7033f337e2f2c90d7&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1501377857556054109/SaveClip.App_AQMppkZcTim94-pw_Nw_MQf9C2VYOGT14oUnf_vtNI_Jb55tY9c0FIVod15234hjESz6eayfdaPa8vVvdmqBnTRGICITQm6-dNWynxQ.mov?ex=69ffcf17&is=69fe7d97&hm=d9e7a56e36d68f177c1bd36bfed67709a41fe0d68955711efbd4182cebfc11cb&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1501377856691765328/SaveClip.App_AQNxFYLrvsDF5IJVXiu39yP6Kkztqhk6nTkJAHukFtAX1CJED56yr36pZwgDZnipz3jF1DCoj1TZKfewwAyYJeV8T_xSh9NUkWQHaww.mov?ex=69ffcf17&is=69fe7d97&hm=b3a9979fe9bb97685153893e823826647fb9fa054838f22226902afff283df63&",
+        "https://fast-file.com/0cdedc62/download",
+        "https://fast-file.com/f6433566/download"
+      ],
+      "tagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1502502508138856531/copy_B3888469-709E-4BCB-A773-57A3BFA80B36_tagged.mp4?ex=69fff201&is=69fea081&hm=e04b9d1023a2123070b3d6b78ee35e8678ab26a4aea1b7a452e4a8d55266a325&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1502502504816967781/SaveClip.App_AQMppkZcTim94-pw_Nw_MQf9C2VYOGT14oUnf_vtNI_Jb55tY9c0FIVod15234hjESz6eayfdaPa8vVvdmqBnTRGICITQm6-dNWynxQ_tagged.mp4?ex=69fff200&is=69fea080&hm=bd08d505e4b77a8193166af4af6f955d0659a5ca2f685810b1c314fa607afcf3&",
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1502502506046029904/SaveClip.App_AQNxFYLrvsDF5IJVXiu39yP6Kkztqhk6nTkJAHukFtAX1CJED56yr36pZwgDZnipz3jF1DCoj1TZKfewwAyYJeV8T_xSh9NUkWQHaww_tagged.mp4?ex=69fff200&is=69fea080&hm=9690ab89dcda431bb67ae1a5e6158240bfdced66f28e104512ddbe166821466b&"
+      ],
+      "messageId": {
+        "public": {
+          "messageIds": [
+            "1502535248028897310"
+          ],
+          "separatorId": "1502535249198846014"
+        },
+        "private": {
+          "messageIds": [
+            "1502534973394259968"
+          ],
+          "separatorId": "1502534974656610394"
+        }
+      },
+      "_queueId": "f56b8e8d-f1cb-4a1f-8fb6-c24b674abb43"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-09T05:06:50.674Z",
+    "rawFileUrls": [
+      "https://fast-file.com/0cdedc62/download",
+      "https://fast-file.com/f6433566/download"
+    ]
   }
 ]
