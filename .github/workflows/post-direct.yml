@@ -10,16 +10,13 @@ defaults:
     shell: bash
 
 env:
-  BASE: ${{ secrets.VERCEL_APP_URL }}
+  BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
 
 permissions:
   contents: write
 
 jobs:
   post:
-    env:
-      BASE: ${{ secrets.VERCEL_APP_URL }}
-      CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout main repo
@@ -52,6 +49,9 @@ jobs:
         run: npm ci
 
       - name: Wait for posting queue and register action
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
           echo "Waiting for posting queue..."
           echo "BASE: ${BASE}"
@@ -76,6 +76,9 @@ jobs:
           echo "Private posting action started with ID: $POSTING_ACTION_ID"
 
       - name: Update queue status
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
           curl -fsS -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
@@ -83,12 +86,18 @@ jobs:
             -d '{"queueId":"${{ github.event.client_payload.queueId }}","status":"posting_private"}'
 
       - name: Post to private channel
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
+          FULL_POST_ACTION: full-post-queue-private
+          FULL_POST_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
         run: |
-          export FULL_POST_ACTION="full-post-queue-private"
-          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "${{ github.event.client_payload.snippetPath }}" --argjson t "${{ github.event.client_payload.taggedMediaUrls }}" '{"snippetPath": $p, "taggedMediaUrls": $t}')
           npx tsx scripts/full-archive-post.ts || fail_job "private posting failed"
 
       - name: Update queue status to public
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
           curl -fsS -X POST "${BASE}/api/internal-queue-status" \
             -H "Content-Type: application/json" \
@@ -96,12 +105,18 @@ jobs:
             -d '{"queueId":"${{ github.event.client_payload.queueId }}","status":"posting_public"}'
 
       - name: Post to public channel
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
+          FULL_POST_ACTION: full-post-queue-public
+          FULL_POST_CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
         run: |
-          export FULL_POST_ACTION="full-post-queue-public"
-          FULL_POST_CLIENT_PAYLOAD=$(jq -n --arg p "${{ github.event.client_payload.snippetPath }}" --argjson t "${{ github.event.client_payload.taggedMediaUrls }}" '{"snippetPath": $p, "taggedMediaUrls": $t}')
           npx tsx scripts/full-archive-post.ts || fail_job "public posting failed"
 
       - name: Mark as complete
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
           curl -fsS -X POST "${BASE}/api/internal-post-complete" \
             -H "Content-Type: application/json" \
@@ -116,6 +131,9 @@ jobs:
 
       - name: Handle failure
         if: failure()
+        env:
+          BASE: ${{ secrets.VERCEL_APP_URL || 'https://snippet-panel.vercel.app' }}
+          CALLBACK_SECRET: ${{ secrets.CALLBACK_SECRET }}
         run: |
           echo "Direct posting workflow failed, updating action queue..."
           curl -fsS -X PATCH "${BASE}/api/action-queue" \
