@@ -94,5 +94,31 @@
       "https://fast-file.com/0cdedc62/download",
       "https://fast-file.com/f6433566/download"
     ]
+  },
+  {
+    "id": "2e8a49aa-beed-4273-948b-3c91f11e2e1c",
+    "snippetPath": "snippets/Drip.json",
+    "snippet": {
+      "createdAt": "2026-05-10T21:56:50.995Z",
+      "title": "Drip",
+      "titleConfirmed": false,
+      "prod": "TRGC & Tjay",
+      "prodConfirmed": true,
+      "date": "2026-05-10",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/83c57d99/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "2e8a49aa-beed-4273-948b-3c91f11e2e1c",
+      "feat": "Lil Gotit"
+    },
+    "status": "tagging",
+    "isNew": true,
+    "pingNewSnippet": true,
+    "createdAt": "2026-05-10T21:56:50.995Z",
+    "rawFileUrls": [
+      "https://fast-file.com/83c57d99/download"
+    ]
   }
 ]
