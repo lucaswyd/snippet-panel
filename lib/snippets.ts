@@ -71,8 +71,12 @@ export function formatDateMMDDYY(isoDate: string): string {
 
 export function sortSnippets(snippets: Snippet[]): Snippet[] {
   return [...snippets].sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.title.localeCompare(b.title);
+    const dateA = a.date ?? '';
+    const dateB = b.date ?? '';
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+    const titleA = a.title ?? '';
+    const titleB = b.title ?? '';
+    return titleA.localeCompare(titleB);
   });
 }
 

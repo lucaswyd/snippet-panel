@@ -103,10 +103,14 @@ async function loadOrderedSnippetRecords(): Promise<SnippetRecord[]> {
   return records
     .filter((record): record is SnippetRecord => Boolean(record))
     .sort((a, b) => {
-      if (a.snippet.date !== b.snippet.date) {
-        return a.snippet.date.localeCompare(b.snippet.date);
+      const dateA = a.snippet.date ?? '';
+      const dateB = b.snippet.date ?? '';
+      if (dateA !== dateB) {
+        return dateA.localeCompare(dateB);
       }
-      return a.snippet.title.localeCompare(b.snippet.title);
+      const titleA = a.snippet.title ?? '';
+      const titleB = b.snippet.title ?? '';
+      return titleA.localeCompare(titleB);
     });
 }
 
@@ -115,10 +119,14 @@ function buildUiRecords(records: SnippetRecord[]): SnippetRecord[] {
     .filter((record) => (record.snippet.untagged_media?.length ?? 0) > 0)
     .slice()
     .sort((a, b) => {
-      if (a.snippet.date !== b.snippet.date) {
-        return b.snippet.date.localeCompare(a.snippet.date);
+      const dateA = a.snippet.date ?? '';
+      const dateB = b.snippet.date ?? '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
       }
-      return a.snippet.title.localeCompare(b.snippet.title);
+      const titleA = a.snippet.title ?? '';
+      const titleB = b.snippet.title ?? '';
+      return titleA.localeCompare(titleB);
     });
 }
 
