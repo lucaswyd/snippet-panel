@@ -102,6 +102,8 @@ export default function SnippetLibrary() {
   const [announcingMediaUrl, setAnnouncingMediaUrl] = useState<string | null>(null);
   const [announcing, setAnnouncing] = useState(false);
   const [announceError, setAnnounceError] = useState<string | null>(null);
+  const [reloadingMediaId, setReloadingMediaId] = useState<string | null>(null);
+  const [reloadError, setReloadError] = useState<string | null>(null);
   const deferredQuery = useDeferredValue(query);
   const mediaFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -428,6 +430,30 @@ export default function SnippetLibrary() {
     }
   };
 
+  const reloadMedia = async (mediaUrl: string, mediaId: string) => {
+    if (!selectedRecord) return;
+    setReloadingMediaId(mediaId);
+    setReloadError(null);
+    try {
+      const res = await fetch("/api/reload-media", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          path: selectedRecord.path,
+          mediaUrl,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Reload failed");
+      }
+    } catch (e) {
+      setReloadError(e instanceof Error ? e.message : "Could not reload media");
+    } finally {
+      setReloadingMediaId(null);
+    }
+  };
+
   return (
     <section className="snippet-library panel">
       <div className="library-hero">
@@ -450,6 +476,7 @@ export default function SnippetLibrary() {
       </div>
 
       {error && <div className="banner-error">{error}</div>}
+      {reloadError && <div className="banner-error">{reloadError}</div>}
       {discordBanner && (
         <div className="banner-error">
           <strong>Discord Upload Needed</strong> — a file was too large for
@@ -765,6 +792,16 @@ export default function SnippetLibrary() {
                             }
                           />
                           <div className="library-url-actions">
+                            {media.untaggedUrl && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                disabled={reloadingMediaId === media.id}
+                                onClick={() => void reloadMedia(media.untaggedUrl, media.id)}
+                              >
+                                {reloadingMediaId === media.id ? "Reloading…" : "Reload"}
+                              </button>
+                            )}
                             {media.taggedUrl && (
                               <button
                                 type="button"
