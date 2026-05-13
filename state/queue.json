@@ -119,5 +119,30 @@
     "rawFileUrls": [
       "https://fast-file.com/05670266/download"
     ]
+  },
+  {
+    "id": "37cb24d8-9025-49c5-bf02-6dc73f08b53d",
+    "snippetPath": "snippets/3am Lobby.json",
+    "snippet": {
+      "createdAt": "2026-05-13T16:14:45.977Z",
+      "title": "3am Lobby",
+      "titleConfirmed": true,
+      "prod": "fuckshiro",
+      "prodConfirmed": true,
+      "date": "2025-04-23",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/9e9c969a/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "37cb24d8-9025-49c5-bf02-6dc73f08b53d"
+    },
+    "status": "tagging",
+    "isNew": false,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-13T16:14:45.977Z",
+    "rawFileUrls": [
+      "https://fast-file.com/9e9c969a/download"
+    ]
   }
 ]
