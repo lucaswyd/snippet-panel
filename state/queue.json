@@ -228,5 +228,31 @@
     "rawFileUrls": [
       "https://fast-file.com/3b620b70/download"
     ]
+  },
+  {
+    "id": "eee7b10f-8f79-4378-aea9-f052e0c9034b",
+    "snippetPath": "snippets/Yotti - Drop Dat 🧳.json",
+    "snippet": {
+      "createdAt": "2026-05-14T01:12:47.084Z",
+      "title": "Yotti - Drop Dat 🧳",
+      "titleConfirmed": false,
+      "prod": "???",
+      "prodConfirmed": false,
+      "date": "2026-05-13",
+      "released": false,
+      "untagged_media": [
+        "https://fast-file.com/9f4f4bfb/download"
+      ],
+      "tagged_media": [],
+      "_queueId": "eee7b10f-8f79-4378-aea9-f052e0c9034b",
+      "feat": "Pradabagshawty"
+    },
+    "status": "tagging",
+    "isNew": true,
+    "pingNewSnippet": true,
+    "createdAt": "2026-05-14T01:12:47.084Z",
+    "rawFileUrls": [
+      "https://fast-file.com/9f4f4bfb/download"
+    ]
   }
 ]
