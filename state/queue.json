@@ -279,5 +279,30 @@
     "rawFileUrls": [
       "https://fast-file.com/3af6b212/download"
     ]
+  },
+  {
+    "id": "6f95e5e5-d7d7-48a2-bb98-54d2f34d66a8",
+    "snippetPath": "snippets/Crank Up (1).json",
+    "snippet": {
+      "createdAt": "2026-05-15T00:05:01.959Z",
+      "title": "Crank Up",
+      "titleConfirmed": false,
+      "prod": "Whyceg & SenseiAtl",
+      "prodConfirmed": true,
+      "date": "2026-05-14",
+      "released": false,
+      "untagged_media": [
+        "https://cdn.discordapp.com/attachments/1491898537926070472/1504635461228822549/copy_F125E224-696D-42EE-8C14-0B6382AD5004.mov?ex=6a07b478&is=6a0662f8&hm=f900c5d5b7fc3ea494af9328e1384a88d7d62c4387dd7496505a2e3a91727414&"
+      ],
+      "tagged_media": [],
+      "_queueId": "6f95e5e5-d7d7-48a2-bb98-54d2f34d66a8"
+    },
+    "status": "tagging",
+    "isNew": true,
+    "pingNewSnippet": false,
+    "createdAt": "2026-05-15T00:05:01.959Z",
+    "rawFileUrls": [
+      "https://cdn.discordapp.com/attachments/1491898537926070472/1504635461228822549/copy_F125E224-696D-42EE-8C14-0B6382AD5004.mov?ex=6a07b478&is=6a0662f8&hm=f900c5d5b7fc3ea494af9328e1384a88d7d62c4387dd7496505a2e3a91727414&"
+    ]
   }
 ]
